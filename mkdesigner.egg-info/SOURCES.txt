@@ -1,3 +1,6 @@
+LICENSE
+MANIFEST.in
+README.md
 setup.py
 mkdesigner/__init__.py
 mkdesigner/addprimertovcf.py
@@ -11,8 +14,10 @@ mkdesigner/params.py
 mkdesigner/refindex.py
 mkdesigner/selectsnp.py
 mkdesigner/utils.py
+mkdesigner/visualize_marker.R
 mkdesigner.egg-info/PKG-INFO
 mkdesigner.egg-info/SOURCES.txt
 mkdesigner.egg-info/dependency_links.txt
 mkdesigner.egg-info/entry_points.txt
+mkdesigner.egg-info/requires.txt
 mkdesigner.egg-info/top_level.txt
