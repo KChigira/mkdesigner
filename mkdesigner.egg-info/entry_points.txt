@@ -1,0 +1,4 @@
+[console_scripts]
+mkprimer = mkdesigner.mkprimer:main
+mkselect = mkdesigner.mkselect:main
+mkvcf = mkdesigner.mkvcf:main

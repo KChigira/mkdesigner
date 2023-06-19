@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: mkdesigner
+Version: 0.0.1
+Summary: Tools for designing DNA markers and their PCR primers from NGS data
+Home-page: https://github.com/KChigira/mkdesigner/
+Author: Koki Chigira
+Author-email: s211905s@st.go.tuat.ac.jp
+License: GPL
