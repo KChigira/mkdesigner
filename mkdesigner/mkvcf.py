@@ -17,10 +17,10 @@ from mkdesigner.mergevcf import MergeVcf
 class MKVcf(object):
 
     def __init__(self, args):
-        self.N_bam = pm.check_args(args)
+        pm.mkvcf_check_args(args)
         self.args = args
-        #self.ref = args.ref
         self.bam = args.bam
+        self.N_bam = len(args.bam)
         self.name = args.name
         self.proj = args.project
         self.cpu = args.cpu

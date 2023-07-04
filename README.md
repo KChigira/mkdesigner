@@ -55,6 +55,29 @@ make test
 ```
 If you have already installed primer3 at other directory, you have to set the path when you run the program.
 
+#### Check about packages in dependency
+Dependent packages often get errors about shared libraries.
+Please check errors of packages below.
+```
+bcftools --version
+samtools --version
+```
+If you got error like below... 
+```
+bcftools: error while loading shared libraries: libcrypto.so.1.0.0: cannot open shared object file: No such file or directory
+```
+you can try a solution like below.
+```
+cd /home/[USER NAME]/(ex.)miniconda3/envs/(ex.)mkdesigner/lib
+ls -l libcrypto.so*
+```
+For example,
+`lrwxrwxrwx ... libcrypto.so -> libcrypto.so.3`
+`-rwxrwxr-x ... libcrypto.so.3`
+Then, you can make symbolic link to the new version of the shared library.
+```
+ln -s libcrypto.so.3 libcrypto.so.1.0.0
+```
 
 ## Usage
 #### Tutorial

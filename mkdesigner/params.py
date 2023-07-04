@@ -25,7 +25,7 @@ class Params(object):
     def mkvcf_options(self):
         parser = argparse.ArgumentParser(description='MKDesigner version {}'.format(__version__),
                                          formatter_class=argparse.RawTextHelpFormatter)
-        parser.usage = ('mkvcf -r <FASTA> -b <BAM> -n <name> -p <Project name>\n')
+        parser.usage = ('mkvcf -r <FASTA> -b <BAM_1> -b <BAM_2>... -n <name_1> -n <name_2>... -p <Project name>\n')
 
         # set options
         parser.add_argument('-r', '--ref',
@@ -320,27 +320,29 @@ class Params(object):
                             version='%(prog)s {}'.format(__version__))
         return parser
     
-    def check_args(self, args):
+    def mkvcf_check_args(self, args):
+        #Does a project file with the same name exist?
         if os.path.isdir(args.project):
             sys.stderr.write(('  Output directory already exist.\n'
                               '  Please rename the project name.\n'))
             sys.exit(1)
 
+        #Is the extentions of files designeated as BAM really '.bam' ?
         for input_name in args.bam:
-                root, ext = os.path.splitext(input_name) #get extention as 'ext'
-                if ext != '.bam':
-                    sys.stderr.write(('  Please check "{}".\n'
-                                      '  The extension of this file is not "bam".\n'
-                                      '  If you wanted to specify fastq, please '
-                                        'input them as paired-end reads which is separated '
-                                        'by comma. e.g. -p fastq1,fastq2\n\n').format(input_name))
+                ext = os.path.splitext(input_name)
+                if ext[-1] != '.bam':
+                    sys.stderr.write(('  Please check input BAM file "{}".\n'
+                                      '  The extension of this file is not "bam".\n').format(input_name))
                     sys.exit(1)
 
-        N_bam = len(args.bam)
-
-        if N_bam != len(args.name) :
+        #Do the number of BAM and the number of names match?
+        if len(args.bam) != len(args.name) :
             sys.stderr.write(('  Number of input BAM files is not'
                               '  matched the number of names.\n\n'))
             sys.exit(1)
 
-        return N_bam
+        #Names must be unique.
+        name_unique = set(args.name)
+        if len(args.name) != len(name_unique) :
+            sys.stderr.write(('  Variety names must not be duplicated.\n\n'))
+            sys.exit(1)
