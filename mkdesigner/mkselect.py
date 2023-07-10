@@ -170,9 +170,6 @@ class MKSelect(object):
         out_vcf_name = str(self.vcf).replace('.vcf', '_{}mk_selected_{}.vcf'.format(self.num_marker, self.target))
         out_png_name = str(self.vcf).replace('.vcf', '_{}mk_selected_{}.png'.format(self.num_marker, self.target))
         path = os.path.dirname(os.path.abspath(__file__))
-        print(out_vcf_name)
-        print(out_png_name)
-        print(path)
         cmd1 = 'Rscript {}/visualize_marker.R {} {} {}'.format(path, out_vcf_name, self.fai, out_png_name)
         cmd1 = prepare_cmd(cmd1)
         try:
@@ -182,7 +179,8 @@ class MKSelect(object):
                     shell=True, check=True)
         except sbp.CalledProcessError:
             print(time_stamp(),
-              'Error occured drawing marker position.',
+              'Error occured drawing marker position. '
+              'Maybe File name of fasta index is wrong.',
               flush=True)
             sys.exit(1) 
         
