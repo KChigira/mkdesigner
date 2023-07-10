@@ -63,6 +63,8 @@ class AddPrimerToVcf(object):
         ##############################################
         with Pool(self.cpu) as p:
             results = p.map(self.parallel, range(nrow))
+            #Each process returns list,
+            #[id(range(nrow)), exit status(0~2), Desciption added to INFO]
         #############################################
         for res in results:
             id = res[0]
@@ -158,22 +160,50 @@ class AddPrimerToVcf(object):
         return str_list
     
     def make_primer3_input(self, series, st_out):
+        #Read INFO column of VCF data
         info = series['INFO'].split(';')
         for elem in info:
             elem_split = elem.split('=')
             if elem_split[0] == 'SPAN':
+                #'span' indicates the distance to the mutations
+                # that exist before and after the current variant.
                 span = elem_split[1].split(',')
                 span = list(map(int, span))
                 break
 
+        #Make parameters for primer3
         target_start = self.scope - self.args.margin + 1
         var_len = len(series['REF'])
         target_length = var_len + self.margin * 2
+        #Avoid designing primers at surrounding variants.
         exclude = ''
         if span[0] <= self.scope:
             exclude += '{},{}'.format(1, self.scope - span[0] + 1)
         if span[1] <= self.scope + var_len - 1:
             exclude += ' {},{}'.format(self.scope + span[1], self.scope - span[1] + var_len)
+        #For SNP markers, designated product length is used.
+        #For INDEL markers, product length is determined by 
+        # an expression with the size of INDEL as a variable.
+        if self.args.type == 'SNP' :
+            max_prd = self.args.max_prodlen
+            opt_prd = self.args.opt_prodlen
+            min_prd = self.args.min_prodlen
+        elif self.args.type == 'INDEL' :
+            X = abs(len(series['REF']) - len(series['ALT']))
+            if len(series['REF']) > len(series['ALT']) :
+                ref_shorter = 0
+                alt_shorter = X
+            else :
+                ref_shorter = X
+                alt_shorter = 0
+
+            if X < 5 :
+                max_prd = 100 - ref_shorter
+                opt_prd = 75 - ref_shorter
+            else:
+                max_prd = round((300 * X) / (10 + X) - ref_shorter)
+                opt_prd = round((max_prd * 0.75) - ref_shorter)
+            min_prd = 50 + alt_shorter
 
         primer3_data_list = [
             'SEQUENCE_ID={}\n'.format(st_out[0]),
@@ -184,8 +214,8 @@ class AddPrimerToVcf(object):
             'PRIMER_OPT_SIZE={}\n'.format(self.args.primer_opt_size),
             'PRIMER_MIN_SIZE={}\n'.format(self.args.primer_min_size),
             'PRIMER_MAX_SIZE={}\n'.format(self.args.primer_max_size),
-            'PRIMER_PRODUCT_OPT_SIZE={}\n'.format(self.args.opt_prodlen),
-            'PRIMER_PRODUCT_SIZE_RANGE={}-{}\n'.format(self.args.min_prodlen, self.args.max_prodlen),
+            'PRIMER_PRODUCT_OPT_SIZE={}\n'.format(opt_prd),
+            'PRIMER_PRODUCT_SIZE_RANGE={}-{}\n'.format(min_prd, max_prd),
             'PRIMER_OPT_GC_PERCENT=50.0\n',
             'PRIMER_MIN_GC=30.0\n',
             'PRIMER_MAX_GC=70.0\n',

@@ -3,7 +3,7 @@
 from mkdesigner.addprimertovcf import AddPrimerToVcf
 from mkdesigner.params import Params
 from mkdesigner.refindex import RefIndex
-from mkdesigner.selectsnp import SelectSnp
+from mkdesigner.selectvariants import SelectVariants
 
 pm = Params('mkprimer')
 args = pm.set_options()
@@ -15,6 +15,7 @@ from mkdesigner.utils import time_stamp, prepare_cmd
 
 class MKPrimer(object):
     def __init__(self, args):
+        pm.mkprimer_check_args(args)
         self.args = args
         self.ref = args.ref
         self.vcf = args.vcf
@@ -49,8 +50,8 @@ class MKPrimer(object):
         ri = RefIndex(self.args)
         ri.run()
 
-    def selectsnp(self):
-        ss = SelectSnp(self.args)
+    def selectvariants(self):
+        ss = SelectVariants(self.args)
         ss.run()
 
     def addprimertovcf(self):
@@ -64,7 +65,7 @@ def main():
     prog.mkdir()
     prog.mvinputfiles()
     prog.refindex()
-    prog.selectsnp()
+    prog.selectvariants()
     prog.addprimertovcf()
     
     print(time_stamp(), 'MKPrimer successfully finished.\n', flush=True)

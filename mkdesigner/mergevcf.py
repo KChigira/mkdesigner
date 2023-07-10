@@ -1,5 +1,4 @@
 import sys
-import os
 import subprocess as sbp
 from mkdesigner.utils import time_stamp, prepare_cmd, call_log
 

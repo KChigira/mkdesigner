@@ -103,19 +103,21 @@ class Params(object):
                             metavar='')
         
         parser.add_argument('-n1', '--name1',
-                            action='store',
+                            action='append',
                             required=True,
                             type=str,
                             help=('Variety name 1.\n'
-                                  'Must match VCF column names'),
+                                  'Must match VCF column names.\n'
+                                  'This parameter can be specified multiple times to design common markers for multiple varieties.\n'),
                             metavar='')
         
         parser.add_argument('-n2', '--name2',
-                            action='store',
+                            action='append',
                             required=True,
                             type=str,
                             help=('Variety name 2.\n'
-                                  'Must match VCF column names'),
+                                  'Must match VCF column names.\n'
+                                  'This parameter can be specified multiple times to design common markers for multiple varieties.\n'),
                             metavar='')
         
         parser.add_argument('-p', '--project',
@@ -152,10 +154,10 @@ class Params(object):
         
         parser.add_argument('--mismatch_allowed',
                             action='store',
-                            default=3,
+                            default=5,
                             type=int,
                             help=('Primers with more mismatch than this\n'
-                                  'are ignored in specificity check.\ndefault: 3'),
+                                  'are ignored in specificity check.\ndefault: 5'),
                             metavar='')  
         
         parser.add_argument('--mismatch_allowed_3_terminal',
@@ -346,3 +348,11 @@ class Params(object):
         if len(args.name) != len(name_unique) :
             sys.stderr.write(('  Variety names must not be duplicated.\n\n'))
             sys.exit(1)
+
+    def mkprimer_check_args(self, args):
+        #Does a project file with the same name exist?
+        if os.path.isdir(args.project):
+            sys.stderr.write(('  Output directory already exist.\n'
+                              '  Please rename the project name.\n'))
+            sys.exit(1)
+

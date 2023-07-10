@@ -1,0 +1,6 @@
+>test:211541-211717_0
+gtctcatggcacttgaggataaggNNNNNNNNNNNNNNNNNNNNcatccccaaaagtgatggtctcat
+>test:211542-211717_1
+tctcatggcacttgaggataaggaNNNNNNNNNNNNNNNNNNNNcatccccaaaagtgatggtctcat
+>test:211522-211717_2
+gaggacttcatcaacctgtgtctcNNNNNNNNNNNNNNNNNNNNcatccccaaaagtgatggtctcat

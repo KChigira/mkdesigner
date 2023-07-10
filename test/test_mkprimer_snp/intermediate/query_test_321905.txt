@@ -1,0 +1,6 @@
+>test:321861-322010_0
+tgatcccacctgtcatacacatatNNNNNNNNNNNNNNNNNNNNCAATGAGAGCAgtacaatggcaga
+>test:321861-322011_1
+tgatcccacctgtcatacacatatNNNNNNNNNNNNNNNNNNNNTCAATGAGAGCAgtacaatggcag
+>test:321861-322012_2
+tgatcccacctgtcatacacatatNNNNNNNNNNNNNNNNNNNNCTCAATGAGAGCAgtacaatggca

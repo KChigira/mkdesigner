@@ -1,0 +1,6 @@
+>test:31786-31947_0
+gaagtcaattttcagatcttacgaNNNNNNNNNNNNNNNNNNNNttaagttttaggaattagtggcct
+>test:31786-31948_1
+gaagtcaattttcagatcttacgaNNNNNNNNNNNNNNNNNNNNgttaagttttaggaattagtggcc
+>test:31785-31947_2
+agaagtcaattttcagatcttacgNNNNNNNNNNNNNNNNNNNNttaagttttaggaattagtggcct

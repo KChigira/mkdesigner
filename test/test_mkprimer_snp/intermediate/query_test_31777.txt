@@ -1,0 +1,6 @@
+>test:31660-31809_0
+agtgcaaaccacatgtatatgtaaNNNNNNNNNNNNNNNNNNNNtcgtaagatctgaaaattgacttc
+>test:31659-31809_1
+tagtgcaaaccacatgtatatgtaNNNNNNNNNNNNNNNNNNNNtcgtaagatctgaaaattgacttc
+>test:31659-31808_2
+tagtgcaaaccacatgtatatgtaNNNNNNNNNNNNNNNNNNNNcgtaagatctgaaaattgacttct

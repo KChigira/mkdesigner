@@ -1,0 +1,6 @@
+>test:460002-460202_0
+ggataaccctgtcctccctcattaNNNNNNNNNNNNNNNNNNNNgctaaactgacacgtggtagacaa
+>test:460002-460204_1
+ggataaccctgtcctccctcattaNNNNNNNNNNNNNNNNNNNNatgctaaactgacacgtggtagac
+>test:460002-460205_2
+ggataaccctgtcctccctcattaNNNNNNNNNNNNNNNNNNNNcatgctaaactgacacgtggtaga

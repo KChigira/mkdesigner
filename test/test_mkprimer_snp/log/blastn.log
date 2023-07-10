@@ -1,0 +1,11 @@
+
+
+Building a new DB, current time: 07/10/2023 08:56:34
+New DB name:   /home/chigira/git/mkdesigner/test/test_mkprimer_snp/ref/test_ref.fasta
+New DB title:  test_mkprimer_snp/ref/test_ref.fasta
+Sequence type: Nucleotide
+Keep MBits: T
+Maximum file size: 3000000000B
+Adding sequences from FASTA; added 1 sequences in 0.00412703 seconds.
+
+
