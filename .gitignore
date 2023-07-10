@@ -1,3 +1,10 @@
 build/
 dist/
 mkdesigner.egg-info/
+test/test_mkvcf/
+test/test_mkprimer_indel/
+test/test_mkprimer_snp/
+
+#To remove from git add,
+#git rm --cached <FILE_NAME>
+#git rm --cached -r <DIR_NAME>
