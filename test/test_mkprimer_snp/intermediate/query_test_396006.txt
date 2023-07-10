@@ -1,6 +1,0 @@
->test:395925-396083_0
-ttacagctccagcataataatggtNNNNNNNNNNNNNNNNNNNNggcgttgtattataaaactacaga
->test:395925-396084_1
-ttacagctccagcataataatggtNNNNNNNNNNNNNNNNNNNNaggcgttgtattataaaactacag
->test:395935-396084_2
-agcataataatggtgctagggattNNNNNNNNNNNNNNNNNNNNaggcgttgtattataaaactacag

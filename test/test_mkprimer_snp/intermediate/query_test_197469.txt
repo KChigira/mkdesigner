@@ -1,6 +1,0 @@
->test:197362-197609_0
-cagacaatggggaatagggaatggNNNNNNNNNNNNNNNNNNNNaaccatgccattacaacttcagct
->test:197362-197574_1
-cagacaatggggaatagggaatggNNNNNNNNNNNNNNNNNNNNtgccattacaattagcaaaaccgg
->test:197362-197608_2
-cagacaatggggaatagggaatggNNNNNNNNNNNNNNNNNNNNaccatgccattacaacttcagcta

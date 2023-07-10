@@ -1,6 +1,0 @@
->test:195426-195599_0
-tctgacaacaacactagaaggcacNNNNNNNNNNNNNNNNNNNNaagctgctctaaaggtctgaacac
->test:195425-195599_1
-gtctgacaacaacactagaaggcaNNNNNNNNNNNNNNNNNNNNaagctgctctaaaggtctgaacac
->test:195426-195621_2
-tctgacaacaacactagaaggcacNNNNNNNNNNNNNNNNNNNNattgttgccactctagctgcataa

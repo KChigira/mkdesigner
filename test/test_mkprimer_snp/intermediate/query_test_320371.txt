@@ -1,6 +1,0 @@
->test:320237-320423_0
-acattgcatgtggattttggaggaNNNNNNNNNNNNNNNNNNNNacacaggattttgacaggaattga
->test:320238-320423_1
-cattgcatgtggattttggaggaaNNNNNNNNNNNNNNNNNNNNacacaggattttgacaggaattga
->test:320237-320424_2
-acattgcatgtggattttggaggaNNNNNNNNNNNNNNNNNNNNaacacaggattttgacaggaattg

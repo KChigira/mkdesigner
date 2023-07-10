@@ -1,6 +1,0 @@
->test:185287-185441_0
-cgtcccgtcggaatgatgagatctNNNNNNNNNNNNNNNNNNNNttcaaccttcatttaatggccagc
->test:185287-185450_1
-cgtcccgtcggaatgatgagatctNNNNNNNNNNNNNNNNNNNNgacgcccatttcaaccttcattta
->test:185287-185436_2
-cgtcccgtcggaatgatgagatctNNNNNNNNNNNNNNNNNNNNccttcatttaatggccagcgactt

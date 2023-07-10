@@ -1,6 +1,0 @@
->test:385618-385775_0
-tcagatttaatgcgtgactcttcaNNNNNNNNNNNNNNNNNNNNttggcacacagatcaaggataagt
->test:385618-385777_1
-tcagatttaatgcgtgactcttcaNNNNNNNNNNNNNNNNNNNNtcttggcacacagatcaaggataa
->test:385618-385780_2
-tcagatttaatgcgtgactcttcaNNNNNNNNNNNNNNNNNNNNttatcttggcacacagatcaagga

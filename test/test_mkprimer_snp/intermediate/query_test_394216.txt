@@ -1,6 +1,0 @@
->test:394172-394331_0
-acagaggattgcaaaacacaggaaNNNNNNNNNNNNNNNNNNNNatggctcttcccatgcaaattttg
->test:394171-394331_1
-aacagaggattgcaaaacacaggaNNNNNNNNNNNNNNNNNNNNatggctcttcccatgcaaattttg
->test:394172-394329_2
-acagaggattgcaaaacacaggaaNNNNNNNNNNNNNNNNNNNNggctcttcccatgcaaattttgaa
