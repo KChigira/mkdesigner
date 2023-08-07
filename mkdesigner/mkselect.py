@@ -51,7 +51,14 @@ class MKSelect(object):
 
     def filtervcf(self):
         #Select variants FILTER = PASS_P
-        self.data_s = self.data[self.data['FILTER'] == 'PASS_P']
+        data_pass = self.data[self.data['FILTER'] == 'PASS_P']
+        #Select variants by --mindif and --maxdif
+        str_len_ref = data_pass['REF'].str.len()
+        str_len_alt = data_pass['ALT'].str.len()
+        dif = str_len_ref - str_len_alt
+        dif_abs = dif.abs()
+        self.data_s = data_pass[(dif_abs >= self.mindif) & (dif_abs <= self.maxdif)]
+        
         if self.target != '':
             tmp = self.target.split(':')
             if len(tmp) != 2:
@@ -73,8 +80,9 @@ class MKSelect(object):
             intervals = [10**20] #use 10**20 as insted of infinity
             current_chr = self.data_s.at[self.data_s.index[0], '#CHROM']
             for i in range(len(self.data_s) - 1):
-                if self.data_s.at[self.data_s.index[i], '#CHROM'] != current_chr:
+                if self.data_s.at[self.data_s.index[i+1], '#CHROM'] != current_chr:
                     intervals.append(10**20) #use 10**20 as instead of infinity
+                    current_chr = self.data_s.at[self.data_s.index[i], '#CHROM']
                 else:
                     interval = (int(self.data_s.at[self.data_s.index[i+1],'POS']) - int(self.data_s.at[self.data_s.index[i], 'POS']))
                     intervals.append(interval)
@@ -132,7 +140,7 @@ class MKSelect(object):
 
     def output(self):
         #1. output VCF
-        out_vcf_name = str(self.vcf).replace('.vcf', '_{}mk_selected_{}.vcf'.format(self.num_marker, self.target))
+        out_vcf_name = str(self.vcf).replace('.vcf', '_{}mk_selected_min{}bp_max{}bp_{}.vcf'.format(self.num_marker, self.mindif,  self.maxdif, self.target))
         with open(out_vcf_name, 'w') as o:
             for h in self.header:
                 o.write('{}\n'.format(h))
@@ -161,14 +169,14 @@ class MKSelect(object):
             sys.exit(1) 
 
         #2. output primer data
-        out_table_name = str(self.vcf).replace('.vcf', '_{}mk_selected_{}.txt'.format(self.num_marker, self.target))
+        out_table_name = str(self.vcf).replace('.vcf', '_{}mk_selected_min{}bp_max{}bp_{}.txt'.format(self.num_marker, self.mindif,  self.maxdif, self.target))
         self.out_table.to_csv(out_table_name, sep='\t', header=True, index=False)
 
         print(time_stamp(), '{} markers were selected.\n'.format(len(self.data_s)), flush=True)
 
     def draw(self):
-        out_vcf_name = str(self.vcf).replace('.vcf', '_{}mk_selected_{}.vcf'.format(self.num_marker, self.target))
-        out_png_name = str(self.vcf).replace('.vcf', '_{}mk_selected_{}.png'.format(self.num_marker, self.target))
+        out_vcf_name = str(self.vcf).replace('.vcf', '_{}mk_selected_min{}bp_max{}bp_{}.vcf'.format(self.num_marker, self.mindif,  self.maxdif, self.target))
+        out_png_name = str(self.vcf).replace('.vcf', '_{}mk_selected_min{}bp_max{}bp_{}.png'.format(self.num_marker, self.mindif,  self.maxdif, self.target))
         path = os.path.dirname(os.path.abspath(__file__))
         cmd1 = 'Rscript {}/visualize_marker.R {} {} {}'.format(path, out_vcf_name, self.fai, out_png_name)
         cmd1 = prepare_cmd(cmd1)

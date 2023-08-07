@@ -118,6 +118,9 @@ class AddPrimerToVcf(object):
         st_in = self.samtools_input(series)
         st_out = self.samtools(st_in, i)
         primer3_format_file = self.make_primer3_input(series, st_out)
+        if primer3_format_file == 'N':
+            return_list = [i, 0, ';PRIMER=']
+            return return_list
         primer3_result_file = self.primer3(primer3_format_file)
         blastn_data_list = self.make_blastn_input(primer3_result_file)
         if len(blastn_data_list) <= 1:
@@ -127,6 +130,9 @@ class AddPrimerToVcf(object):
         df_primer_info = blastn_data_list[1]
         blastn_result_file = self.blastn(blastn_query_file)
         df_filtered = self.filter_blastn_result(blastn_result_file, df_primer_info['L_seq'], df_primer_info['R_seq'])
+        if df_filtered.shape[0] <= 1:
+            return_list = [i, 1, ';PRIMER=']
+            return return_list
         use_primer_set = self.select_primer_set(df_primer_info, df_filtered)
         if use_primer_set == -1:
             return_list = [i, 1, ';PRIMER=']
@@ -170,6 +176,11 @@ class AddPrimerToVcf(object):
                 span = elem_split[1].split(',')
                 span = list(map(int, span))
                 break
+
+        #if it is impossible to make primers because span is too small, primer3 input file is not made.
+        min_span = self.args.primer_min_size + self.args.margin
+        if span[0] <= min_span or span[1] <= min_span:
+            return 'N'
 
         #Make parameters for primer3
         target_start = self.scope - self.args.margin + 1
@@ -251,6 +262,7 @@ class AddPrimerToVcf(object):
             call_log(self.out, 'primer3', cmd)
             sys.exit(1)
 
+        os.remove(input)
         return name_result
 
     def make_blastn_input(self, input):
@@ -290,6 +302,8 @@ class AddPrimerToVcf(object):
                     primer_row['product_size'] = tmp[1].strip()
                     primer_info = pd.concat([primer_info, pd.DataFrame([primer_row])])
                     idnum += 1
+        
+        os.remove(input)
         if idnum == 0:
             return ''
         
@@ -320,10 +334,16 @@ class AddPrimerToVcf(object):
             call_log(self.out, 'blastn', cmd)
             sys.exit(1)
 
+        os.remove(input)
         return name_result
 
     def filter_blastn_result(self, input, primers_L, primers_R):
-        df = pd.read_csv(input, header=None, sep='\t')
+        try:
+            df = pd.read_csv(input, header=None, sep='\t')
+        except pd.errors.EmptyDataError:
+            os.remove(input)
+            return pd.DataFrame()
+        os.remove(input)
         col = ['qaccver', 'saccver', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'qseq', 'sseq', 'sstrand']
         #Example: [test:98-322_0	test	100	20	0	0	41	60	322	303	0.002	33.3	TGGTCCTTCGAGTGGATGGA	TGGTCCTTCGAGTGGATGGA	minus]
         df.columns = col
@@ -341,24 +361,42 @@ class AddPrimerToVcf(object):
                 p_pos_L = [1, p_len_L]
                 p_pos_R = [p_len_L + 20 + 1, p_len_L + 20 + p_len_R]
 
-            df.at[df.index[j], 'idnum'] = int(df['qaccver'][j].split('_')[-1])
+            df.at[df.index[j], 'idnum'] = idnum
             
             ## 'mm' means mismuch nucleotide number
-            if df['qend'][j] < p_pos_R[1]/2:
-                mm = (df['qstart'][j] - p_pos_L[0]) + (p_pos_L[1] - df['qend'][j])
+            ## 'mm_3t' means mismuch nucleotide number in 3' terminal
+            if df['qend'][j] < p_pos_R[1]/2: 
+                #5' terminal
+                if df['qstart'][j] - p_pos_L[0] < 2:
+                    mm = df['qstart'][j] - p_pos_L[0]
+                else:
+                    mm = df['qstart'][j] - p_pos_L[0] - 1
+                #If 2 or more bases from the end are not aligned, all are not considered mismatches and 1 is subtracted from the mismatch.
+                #3' terminal
+                if p_pos_L[1] - df['qend'][j] < 2:
+                    mm3t = p_pos_L[1] - df['qend'][j]
+                else:
+                    mm3t = p_pos_L[1] - df['qend'][j] - 1
+                mm = mm + mm3t
             else:
-                mm = (df['qstart'][j] - p_pos_R[0]) + (p_pos_R[1] - df['qend'][j])
+                #5' terminal
+                if df['qstart'][j] - p_pos_R[0] < 2:
+                    mm = df['qstart'][j] - p_pos_R[0]
+                else:
+                    mm = df['qstart'][j] - p_pos_R[0] - 1
+                #3' terminal
+                if p_pos_L[1] - df['qend'][j] < 2:
+                    mm3t = p_pos_R[1] - df['qend'][j]
+                else:
+                    mm3t = p_pos_R[1] - df['qend'][j] - 1
+                mm = mm + mm3t
+
             mm = mm + df['mismatch'][j] # add internal mismuch number
             if mm > self.args.mismatch_allowed:
                 continue
-
-            ## 'mm_3t' means mismuch nucleotide number in 3' terminal
-            if df['qend'][j] < p_pos_R[1]/2:
-                mm3t = p_pos_L[1] - df['qend'][j]
-            else:
-                mm3t = df['qstart'][j] - p_pos_R[0]
             if mm3t > self.args.mismatch_allowed_3_terminal:
                 continue
+            
             qseq = df['qseq'][j][-5:]
             sseq = df['sseq'][j][-5:]
             for k in range(5-mm3t):
@@ -369,10 +407,8 @@ class AddPrimerToVcf(object):
 
             df_selected = pd.concat([df_selected, pd.DataFrame([df.iloc[j]])])
         
-        df_selected = df_selected.sort_values('sstart') #sort by position
-        df_selected = df_selected.sort_values('saccver') #sort by chromosome
-        df_selected = df_selected.sort_values('idnum') #sort by dataset
-
+        df_selected.sort_values(by=['idnum','saccver','sstart'], inplace=True) #sort
+        
         #Detecting unintended PCR products
         df_output = pd.DataFrame(columns=df_selected.columns)
         for j in range(len(df_selected)):
