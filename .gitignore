@@ -4,6 +4,9 @@ mkdesigner.egg-info/
 test/test_mkvcf/
 test/test_mkprimer_indel/
 test/test_mkprimer_snp/
+test/test_mkprimer_indel_2/
+test/test_mkprimer_snp_2/
+test/debug/
 
 #To remove from git add,
 #git rm --cached <FILE_NAME>
