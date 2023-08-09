@@ -28,9 +28,8 @@ class AddPrimerToVcf(object):
 
     def run(self):
         print(time_stamp(),
-              'Making primer sets for each variants.',
+              'Making databases.',
               flush=True)
-        
         #Make database files needed for blastn
         cmd0 = 'makeblastdb -in {} \
                 -parse_seqids \
@@ -46,7 +45,10 @@ class AddPrimerToVcf(object):
         except sbp.CalledProcessError:
             call_log(self.out, 'blastn', cmd0)
             sys.exit(1) 
-
+        print(time_stamp(),
+              'Done.',
+              flush=True)
+        
         #Read input VCF
         vcf_list = read_vcf(self.vcf)
         self.header = vcf_list[0]
@@ -54,8 +56,23 @@ class AddPrimerToVcf(object):
         self.data = vcf_list[2]
         self.header.append('##addprimertovcf.py_{}'.format(time_stamp()))
         self.data = pd.DataFrame(self.data, columns=self.colnames)
+        nrow_all = len(self.data) #This is all candidate variants.
+        print(time_stamp(),
+              'Input VCF has {} variants.'.format(nrow_all),
+              flush=True)
+        print(time_stamp(),
+              'Removing variants which are impossible to be markers.',
+              flush=True)
+        self.data = self.delete_impossible_variants(self.data)
         nrow = len(self.data)
+        print(time_stamp(),
+              '{} variants are selected for making primers.'.format(nrow),
+              flush=True)
 
+        print(time_stamp(),
+              'Searching primers and checking their specificity '
+              'using {} threads.'.format(self.cpu),
+              flush=True)
         no_primer = 0
         non_specific = 0
         success = 0
@@ -109,6 +126,27 @@ class AddPrimerToVcf(object):
               'Done.',
               flush=True)
 
+    def delete_impossible_variants(self, dataframe):
+        #Read INFO column of VCF data
+        delete_row = []
+        for i in range(len(dataframe)):
+            info = dataframe['INFO'][i].split(';')
+            for elem in info:
+                elem_split = elem.split('=')
+                if elem_split[0] == 'SPAN':
+                    #'span' indicates the distance to the mutations
+                    # that exist before and after the current variant.
+                    span = elem_split[1].split(',')
+                    span = list(map(int, span))
+                    break
+
+            #Delete if it is impossible to make primers because span is too small.
+            min_span = self.args.primer_min_size + self.args.margin
+            if span[0] <= min_span or span[1] <= min_span:
+                delete_row.append(i)
+        dataframe_pass = dataframe.drop(dataframe.index[delete_row])
+        dataframe_pass = dataframe_pass.reset_index(drop=True)
+        return dataframe_pass
 
     def parallel(self, i):
         #[0]:row number [1]:status(0 means NO_PRIMER, 1 means NON_SPECIFIC, 2 means PASS) [2]description for adding primer infomation
@@ -118,9 +156,11 @@ class AddPrimerToVcf(object):
         st_in = self.samtools_input(series)
         st_out = self.samtools(st_in, i)
         primer3_format_file = self.make_primer3_input(series, st_out)
+        '''
         if primer3_format_file == 'N':
             return_list = [i, 0, ';PRIMER=']
             return return_list
+        '''
         primer3_result_file = self.primer3(primer3_format_file)
         blastn_data_list = self.make_blastn_input(primer3_result_file)
         if len(blastn_data_list) <= 1:
@@ -171,16 +211,17 @@ class AddPrimerToVcf(object):
         for elem in info:
             elem_split = elem.split('=')
             if elem_split[0] == 'SPAN':
-                #'span' indicates the distance to the mutations
-                # that exist before and after the current variant.
                 span = elem_split[1].split(',')
                 span = list(map(int, span))
                 break
 
+        #Modified to remove impossible variants before multi processing. 230809
+        '''
         #if it is impossible to make primers because span is too small, primer3 input file is not made.
         min_span = self.args.primer_min_size + self.args.margin
         if span[0] <= min_span or span[1] <= min_span:
             return 'N'
+        '''
 
         #Make parameters for primer3
         target_start = self.scope - self.args.margin + 1

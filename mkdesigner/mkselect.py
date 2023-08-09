@@ -52,13 +52,31 @@ class MKSelect(object):
     def filtervcf(self):
         #Select variants FILTER = PASS_P
         data_pass = self.data[self.data['FILTER'] == 'PASS_P']
+
+        #Avoid lowercase
+        if self.args.avoid_lowercase:
+            #Correct infomation of primers
+            check_primers = self.get_info_primers(data_pass)
+            #col = ['name','num','chr','L_seq','R_seq','L_pos','R_pos','L_TM','R_TM','product_size']
+            delete_row = [] #row indexes to delete
+            for i in range(len(check_primers)):
+                if check_primers['L_seq'][i].isupper() and \
+                   check_primers['R_seq'][i].isupper():
+                    #if all characters are uppercase, TRUE
+                    pass
+                else:
+                    delete_row.append(i)
+            data_pass = data_pass.drop(data_pass.index[delete_row])
+
         #Select variants by --mindif and --maxdif
         str_len_ref = data_pass['REF'].str.len()
         str_len_alt = data_pass['ALT'].str.len()
         dif = str_len_ref - str_len_alt
         dif_abs = dif.abs()
-        self.data_s = data_pass[(dif_abs >= self.mindif) & (dif_abs <= self.maxdif)]
+        data_pass = data_pass[(dif_abs >= self.mindif) & (dif_abs <= self.maxdif)]
+        data_pass = data_pass.reset_index(drop=True)
         
+        #Select variants if target position is designated.
         if self.target != '':
             tmp = self.target.split(':')
             if len(tmp) != 2:
@@ -71,9 +89,16 @@ class MKSelect(object):
             target_chr = tmp[0]
             target_start = int(tmp2[0])
             target_end = int(tmp2[1])
-            self.data_s = self.data_s[self.data_s['#CHROM'] == target_chr and
-                            self.data_s['POS'] > target_start and
-                            self.data_s['POS'] < target_end]
+            delete_row = [] #row indexes to delete
+            for i in range(len(data_pass)):
+                if data_pass['#CHROM'][i] == target_chr and \
+                   int(data_pass['POS'][i]) > target_start and \
+                   int(data_pass['POS'][i]) < target_end:
+                    pass
+                else:
+                    delete_row.append(i)
+            data_pass = data_pass.drop(data_pass.index[delete_row])
+        self.data_s = data_pass
 
         #Decrease markers to a specified number (-n)
         while self.num_marker < len(self.data_s):
@@ -97,9 +122,12 @@ class MKSelect(object):
             self.data_s = self.data_s.drop(self.data_s.index[remove_index])
 
         #Correct infomation of primers
+        self.primers = self.get_info_primers(self.data_s)
+
+    def get_info_primers(self, vcfdata):
         primers_list = []
-        for i in range(len(self.data_s)):
-            info = str(self.data_s.at[self.data_s.index[i], 'INFO'])
+        for i in range(len(vcfdata)):
+            info = str(vcfdata.at[vcfdata.index[i], 'INFO'])
             info_spl = info.split(';')
             for j in range(len(info_spl)):
                 elem = info_spl[j].split('=')
@@ -107,7 +135,7 @@ class MKSelect(object):
                     pri = elem[1].split('|')
                     primers_list.append(pri)
         primers_col = ['name','num','chr','L_seq','R_seq','L_pos','R_pos','L_TM','R_TM','product_size']
-        self.primers = pd.DataFrame(primers_list, columns=primers_col)
+        return pd.DataFrame(primers_list, columns=primers_col)
 
     def maketable(self):
         name_line = self.data_s.columns[9:]

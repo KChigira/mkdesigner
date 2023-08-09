@@ -34,7 +34,7 @@ for(i in 0:10){
 png(png_name, height=1440, width=1440, res=200)
 par(mar = c(5, 5, 4, 2)) 
 plot(-1, type="n", bty="o", ,xaxt="n", yaxt="n", xlab="", ylab="",
-	main=paste0(nrow(data), " SNPs position"), 
+	main=paste0(nrow(data), " markers position"), 
 	cex.main=2, xlim=c(0,length(len_chr)+1), ylim=c(max(len_chr),0))
 axis(side=1, at=1:length(len_chr), las=2, cex.axis=1.7,
      labels=c(chr_name))

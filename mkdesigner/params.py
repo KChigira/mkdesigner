@@ -315,6 +315,11 @@ class Params(object):
                             help=('For indel marker, set maximum differences\n'
                                   'of PCR product length between alleles.'),
                             metavar='')
+        
+        parser.add_argument('--avoid_lowercase',
+                            action='store_true',
+                            help=('Select only primers written by uppercase.\n'
+                                  'Lowercase may mean repeat sequence.'))
 
         # set version
         parser.add_argument('-v', '--version',
