@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 from mkdesigner.params import Params
 
 pm = Params('mkvcf')
@@ -8,11 +9,11 @@ args = pm.set_options()
 
 import os
 from multiprocessing import Pool
-from mkdesigner.utils import time_stamp
-from mkdesigner.mvinputfiles import MvInputFiles
+from mkdesigner.utils import prepare_cmd, time_stamp
 from mkdesigner.refindex import RefIndex
 from mkdesigner.haplocall import HaploCall
 from mkdesigner.mergevcf import MergeVcf
+import subprocess as sbp
 
 class MKVcf(object):
 
@@ -29,13 +30,20 @@ class MKVcf(object):
         os.mkdir('{}'.format(self.proj))
         os.mkdir('{}/log'.format(self.proj))
         os.mkdir('{}/ref'.format(self.proj))
-        os.mkdir('{}/bam'.format(self.proj))
+        #230821 modified not to copy bam files.
+        #os.mkdir('{}/bam'.format(self.proj))
         os.mkdir('{}/vcf_1st'.format(self.proj))
         os.mkdir('{}/vcf_2nd'.format(self.proj))
 
     def mvinputfiles(self):
-        mi = MvInputFiles(self.args)
-        mi.run()
+        cmd1 = 'cp {} {}/ref/'.format(self.args.ref, self.proj)
+        cmd1 = prepare_cmd(cmd1)
+        try:
+            sbp.run(cmd1, stdout=sbp.DEVNULL, stderr=sbp.DEVNULL,
+                    shell=True, check=True)
+        except sbp.CalledProcessError:
+            print('Error occored at moving input files to the working directory.',flush=True)
+            sys.exit(1)
 
     def refindex(self):
         ri = RefIndex(self.args)

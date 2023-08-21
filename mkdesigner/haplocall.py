@@ -13,7 +13,9 @@ class HaploCall(object):
         self.is2nd = is2nd
 
         self.ref = '{}/ref/{}'.format(self.out, os.path.basename(args.ref))
-        self.bam = '{}/bam/{}'.format(self.out, os.path.basename(args.bam[num]))
+        #self.bam = '{}/bam/{}'.format(self.out, os.path.basename(args.bam[num]))
+        #230821 modified not to copy bam file.
+        self.bam = args.bam[num]
 
         if is2nd:
             self.vcfdir = '{}/vcf_2nd/{}'.format(self.out, self.name)

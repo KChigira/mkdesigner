@@ -2,6 +2,7 @@ import sys
 import subprocess as sbp
 from mkdesigner.utils import time_stamp, prepare_cmd, call_log
 
+#This script is no longer used
 
 class MvInputFiles(object):
 
