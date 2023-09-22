@@ -121,7 +121,7 @@ class SelectVariants(object):
                 continue
 
             #Get span where we can design primers 
-            chrend = chrlens[chrnames.index(data[i][0])]
+            chrend = int(chrlens[chrnames.index(data[i][0])]) #230921 modified
             if i == 0:
                 chr_3 = ['', data[i][0], data[i+1][0]]
             elif i == len(data) - 1:

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
 import csv
-import os
 import pandas as pd
 import sys
 import subprocess as sbp
+import matplotlib.pyplot as plt
 from mkdesigner.utils import read_vcf, time_stamp, prepare_cmd
 from mkdesigner.params import Params
+from mkdesigner.visualize_marker import VisualizeMarker
 
 pm = Params('mkselect')
 args = pm.set_options()
@@ -205,6 +206,12 @@ class MKSelect(object):
     def draw(self):
         out_vcf_name = str(self.vcf).replace('.vcf', '_{}mk_selected_min{}bp_max{}bp_{}.vcf'.format(self.num_marker, self.mindif,  self.maxdif, self.target))
         out_png_name = str(self.vcf).replace('.vcf', '_{}mk_selected_min{}bp_max{}bp_{}.png'.format(self.num_marker, self.mindif,  self.maxdif, self.target))
+
+        vm = VisualizeMarker(out_vcf_name, out_png_name, self.fai)
+        vm.run()
+
+        #230921 modified to use python only
+        '''
         path = os.path.dirname(os.path.abspath(__file__))
         cmd1 = 'Rscript {}/visualize_marker.R {} {} {}'.format(path, out_vcf_name, self.fai, out_png_name)
         cmd1 = prepare_cmd(cmd1)
@@ -219,6 +226,7 @@ class MKSelect(object):
               'Maybe File name of fasta index is wrong.',
               flush=True)
             sys.exit(1) 
+        '''
         
 
 def main():

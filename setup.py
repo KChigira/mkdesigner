@@ -12,6 +12,7 @@ setup(name='mkdesigner',
       packages=find_packages(),
       install_requires=[
         'pandas',
+        'matplotlib',
       ],
       entry_points={'console_scripts': [
             'mkvcf = mkdesigner.mkvcf:main',

@@ -13,6 +13,8 @@ from mkdesigner.utils import prepare_cmd, time_stamp
 from mkdesigner.refindex import RefIndex
 from mkdesigner.haplocall import HaploCall
 from mkdesigner.mergevcf import MergeVcf
+#230826 inserted
+from mkdesigner.removetoolargeindel import RemoveTooLargeIndel
 import subprocess as sbp
 
 class MKVcf(object):
@@ -57,6 +59,11 @@ class MKVcf(object):
         mv = MergeVcf(self.args, False)
         mv.run()
 
+    def remove_too_large_indel(self):
+        rt = RemoveTooLargeIndel(self.args)
+        rt.run()
+        #Removing indels larger than 100 bp to avoid errors.
+
     def haplocall_2nd(self, num):
         hc = HaploCall(self.args, num, True)
         hc.run()
@@ -75,6 +82,7 @@ def main():
     with Pool(prog.cpu) as p:
         p.map(prog.haplocall_1st, range(prog.N_bam))
     prog.mergevcf_1st()
+    prog.remove_too_large_indel()
     with Pool(prog.cpu) as p:
         p.map(prog.haplocall_2nd, range(prog.N_bam))
     prog.mergevcf_2nd()

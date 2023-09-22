@@ -32,7 +32,7 @@ class HaploCall(object):
 
             cmd2 = 'gatk HaplotypeCaller \
                     -R {} -I {} -O {}_raw_variants.vcf \
-                    --alleles {}/vcf_1st/Merged_filtered_variants.vcf.gz \
+                    --alleles {}/vcf_1st/Merged_filtered_variants_too_large_indel_removed.vcf \
                     >> {}/log/gatk.log 2>&1'.format(self.ref, self.bam, self.vcfdir, self.out, self.out)
         else: #1st
             print(time_stamp(),
