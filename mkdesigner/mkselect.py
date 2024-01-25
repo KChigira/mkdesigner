@@ -262,7 +262,7 @@ class MKSelect(object):
         out_vcf_name = '{}.vcf'.format(self.out_stem)
         out_png_name = '{}.png'.format(self.out_stem)
 
-        vm = VisualizeMarker(out_vcf_name, out_png_name, self.fai, False)
+        vm = VisualizeMarker(out_vcf_name, out_png_name, self.fai)
         vm.run()
     
 

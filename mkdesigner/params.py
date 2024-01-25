@@ -308,6 +308,14 @@ class Params(object):
                                   'This file must be formatted as "test/density.tsv".'),
                             metavar='')
         
+        parser.add_argument('--type',
+                            action='store',
+                            default='SNP',
+                            choices=['SNP',  'INDEL'],
+                            help=('Type of variants.\n'
+                                  'SNP or INDEL are supported.'),
+                            metavar='')
+        
         parser.add_argument('--mindif',
                             action='store',
                             default=0,
