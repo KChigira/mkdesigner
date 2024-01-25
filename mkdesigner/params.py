@@ -293,8 +293,8 @@ class Params(object):
                             metavar='')
         
         parser.add_argument('-t', '--target',
-                            action='store',
-                            default='',
+                            action='append',
+                            default=None,
                             type=str,
                             help=('Target position where primers designed/\n'
                                   'e.g. "chr01:1000000-3500000"'),

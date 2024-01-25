@@ -76,6 +76,7 @@ class MKSelect(object):
                 else:
                     delete_row.append(i)
             data_pass = data_pass.drop(data_pass.index[delete_row])
+            
 
         if self.type == 'INDEL':
             #Select variants by --mindif and --maxdif

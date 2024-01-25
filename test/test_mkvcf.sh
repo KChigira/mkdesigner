@@ -19,7 +19,7 @@ mkvcf -r test_ref.fasta \
       -n lineA -n lineB \
       -p test_mkvcf_3 --cpu 4
 
-#240125 ver. 0.3.2
+#240125 ver. 0.3.4
 mkvcf -r test_ref.fasta \
       -b lineA_sorted_reads.bam \
       -b lineB_sorted_reads.bam \

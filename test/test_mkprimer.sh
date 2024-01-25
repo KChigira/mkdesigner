@@ -64,7 +64,7 @@ mkprimer -r test_ref.fasta \
          --search_span 250 --primer_min_size 18 \
          --primer_opt_size 20 --primer_max_size 26
 
-#240125 ver.0.3.2
+#240125 ver.0.3.4
 #SNP
 mkprimer -r test_ref.fasta \
          -V test_mkvcf_4/vcf_2nd/Merged_filtered_variants.vcf \

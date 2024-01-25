@@ -257,6 +257,7 @@ class AddPrimerToVcf(object):
                 opt_prd = round((max_prd * 0.75) - ref_shorter)
             min_prd = 50 + alt_shorter
 
+        abspath = self.args.primer3_loc.replace('~', '{}'.format(os.environ['HOME']))
         primer3_data_list = [
             'SEQUENCE_ID={}\n'.format(st_out[0]),
             'SEQUENCE_TEMPLATE={}\n'.format(st_out[1]),
@@ -279,7 +280,7 @@ class AddPrimerToVcf(object):
             'PRIMER_MAX_SELF_END=2\n',
             'PRIMER_MAX_POLY_X=4\n',
             'PRIMER_EXPLAIN_FLAG=1\n',
-            'PRIMER_THERMODYNAMIC_PARAMETERS_PATH={}primer3_config\n'.format(self.args.primer3_loc),
+            'PRIMER_THERMODYNAMIC_PARAMETERS_PATH={}primer3_config\n'.format(abspath),
             '=\n']
         primer3_data = ''.join(primer3_data_list)
 
