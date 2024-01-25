@@ -279,6 +279,7 @@ class AddPrimerToVcf(object):
             'PRIMER_MAX_SELF_END=2\n',
             'PRIMER_MAX_POLY_X=4\n',
             'PRIMER_EXPLAIN_FLAG=1\n',
+            'PRIMER_THERMODYNAMIC_PARAMETERS_PATH={}primer3_config\n'.format(self.args.primer3_loc),
             '=\n']
         primer3_data = ''.join(primer3_data_list)
 
@@ -322,7 +323,7 @@ class AddPrimerToVcf(object):
                     chr = sequence_id.split(':')[0]
                     start_pos = int(sequence_id.split(':')[1].split('-')[0])
                 if tmp[0] == 'PRIMER_LEFT_{}_SEQUENCE'.format(idnum):
-                    primer_row = pd.Series(index=self.additional_info, name=str(idnum))
+                    primer_row = pd.Series(index=self.additional_info, name=str(idnum), dtype=str)
                     primer_row['name'] = sequence_id
                     primer_row['num'] = idnum
                     primer_row['chr'] = chr
@@ -391,14 +392,14 @@ class AddPrimerToVcf(object):
         nrow = len(df)
         df['idnum'] = range(nrow) #Add id number to last column
 
-        df_selected = pd.DataFrame(columns=df.columns)
+        df_selected = None
 
         idnum = -1
         for j in range(nrow):
             while int(df['qaccver'][j].split('_')[-1]) != idnum:
                 idnum += 1
-                p_len_L = len(primers_L[idnum])
-                p_len_R = len(primers_R[idnum])
+                p_len_L = len(primers_L.iloc[idnum])
+                p_len_R = len(primers_R.iloc[idnum])
                 p_pos_L = [1, p_len_L]
                 p_pos_R = [p_len_L + 20 + 1, p_len_L + 20 + p_len_R]
 
@@ -446,12 +447,18 @@ class AddPrimerToVcf(object):
             if mm3t > self.args.mismatch_allowed_3_terminal:
                 continue
 
-            df_selected = pd.concat([df_selected, pd.DataFrame([df.iloc[j]])])
+            if df_selected is None:
+                df_selected = pd.DataFrame([df.iloc[j]])
+            else:
+                df_selected = pd.concat([df_selected, pd.DataFrame([df.iloc[j]])])
+        
+        if df_selected is None:
+            pd.DataFrame(columns=df.columns)
         
         df_selected.sort_values(by=['idnum','saccver','sstart'], inplace=True) #sort
         
         #Detecting unintended PCR products
-        df_output = pd.DataFrame(columns=df_selected.columns)
+        df_output = None
         for j in range(len(df_selected)):
             if df_selected.at[df_selected.index[j], 'sstrand'] == 'plus':
                 pri = df_selected.at[df_selected.index[j], 'qaccver']
@@ -465,11 +472,16 @@ class AddPrimerToVcf(object):
                     if df_selected.at[df_selected.index[j+cnt], 'saccver'] != chr: break
                     if df_selected.at[df_selected.index[j+cnt], 'sstrand'] == 'minus':
                         if df_selected.at[df_selected.index[j+cnt], 'sstart'] - pos < self.args.unintended_prod_size_allowed:
-                            df_output = pd.concat([df_output, pd.DataFrame([df_selected.iloc[j]])])
+                            if df_output is None:
+                                df_output = pd.DataFrame([df_selected.iloc[j]])
+                            else:
+                                df_output = pd.concat([df_output, pd.DataFrame([df_selected.iloc[j]])])
                             df_output = pd.concat([df_output, pd.DataFrame([df_selected.iloc[j+cnt]])])
                         else:
                             break
-        
+        if df_output is None:
+             df_output = pd.DataFrame(columns=df_selected.columns)
+             
         name_blastn_filtered = str(input).replace('/blastn_', '/blastn_filtered_')
         df_output.to_csv(name_blastn_filtered, sep='\t', header=False, index=False)
         df_output.reset_index(drop=True)

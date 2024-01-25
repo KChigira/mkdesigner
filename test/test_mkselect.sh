@@ -72,3 +72,18 @@ mkselect -i test_mkprimer_indel_3/ref/test_ref.fasta.fai \
          -V test_mkprimer_indel_3/vcf/Merged_filtered_variants_selected_primer_added.vcf \
          -n 10000 --avoid_lowercase \
          --mindif 10 --maxdif 50
+
+#240125 ver.0.3.2
+mkselect -i test_mkprimer_snp_4/ref/test_ref.fasta.fai \
+         -V test_mkprimer_snp_4/vcf/Merged_filtered_variants_selected_primer_added.vcf \
+         -n 10000 --avoid_lowercase
+mkselect -i test_mkprimer_snp_4/ref/test_ref.fasta.fai \
+         -V test_mkprimer_snp_4/vcf/Merged_filtered_variants_selected_primer_added.vcf \
+         -n 20 --avoid_lowercase
+mkselect -i test_mkprimer_indel_4/ref/test_ref.fasta.fai \
+         -V test_mkprimer_indel_4/vcf/Merged_filtered_variants_selected_primer_added.vcf \
+         -n 10000 --avoid_lowercase
+mkselect -i test_mkprimer_indel_4/ref/test_ref.fasta.fai \
+         -V test_mkprimer_indel_4/vcf/Merged_filtered_variants_selected_primer_added.vcf \
+         -n 10000 --avoid_lowercase \
+         --mindif 10 --maxdif 50

@@ -93,7 +93,7 @@ class SelectVariants(object):
                 for g in geno_2:
                     gt_2.append(g[gt_index])
                     dp_2.append(int(g[dp_index]))
-            except ValueError:
+            except (ValueError, IndexError):
                 continue #Maybe lack of GT or DP data.
             
             #Check combination of genotypes

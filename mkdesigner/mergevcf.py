@@ -32,7 +32,7 @@ class MergeVcf(object):
         cmd2 = 'gatk IndexFeatureFile -I {}Merged_filtered_variants.vcf.gz \
                 >> {}/log/gatk.log 2>&1'.format(self.vcfdir, self.out)
 
-        cmd3 = 'gunzip -k {}Merged_filtered_variants.vcf.gz'.format(self.vcfdir)
+        cmd3 = 'gunzip -c {}Merged_filtered_variants.vcf.gz > {}Merged_filtered_variants.vcf'.format(self.vcfdir, self.vcfdir)
 
         cmd1 = prepare_cmd(cmd1)
         cmd2 = prepare_cmd(cmd2)

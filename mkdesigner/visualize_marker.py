@@ -40,7 +40,7 @@ class VisualizeMarker(object):
         if(max(self.fai_data['len']) / standard < 2):
             standard = standard / 5
         elif(max(self.fai_data['len']) / standard < 5):
-            standard = standard / 2
+            standard = int(standard / 2)
         #if the longest chr length is 23098790,
         #standard = 5000000 
         
@@ -73,14 +73,16 @@ class VisualizeMarker(object):
                              yticks=y_axis_at, 
                              yticklabels=y_axis_lab,
                              ylabel="Position")
+        plt.subplots_adjust(left=0.15, right=0.95, bottom=0.15, top=0.95)
+        plt.xticks(rotation=45)
 
         for i in range(len(self.fai_data['chr'])):
             #plot([x1, x2], [y1, y2])
             ax.plot([i, i], [0, self.fai_data['len'][i]], color="black") 
             data_select = self.data[self.data['#CHROM'] == self.fai_data['chr'][i]]
             for j in range(len(data_select)):
-                pos = data_select['POS'][j]
-                ax.plot([i-0.3, i+0.3], [pos, pos], color="black")
+                pos = data_select['POS'].iloc[j]
+                ax.plot([i-0.3, i+0.3], [pos, pos], color="black", linewidth=0.5)
 
         plt.xlim(-1, len(self.fai_data['chr']))
         plt.ylim(longest_len*1.05, -longest_len*0.05)
