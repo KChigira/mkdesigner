@@ -266,8 +266,9 @@ class Params(object):
         parser.usage = ('mkselect -i <FASTA Index file>\n'
                         '         -V <VCF with Primer> -n <INT>\n'
                         '         [-t <Target position>]\n'
-                        '         [--mindif <INT>] [--maxdif <INT>]\n')
-
+                        '         [-d <TSV with marker density infomation>]\n'
+                        '         [--avoid_lowercase]\n')
+        
         # set options
         parser.add_argument('-i', '--fai',
                             action='store',
@@ -297,6 +298,14 @@ class Params(object):
                             type=str,
                             help=('Target position where primers designed/\n'
                                   'e.g. "chr01:1000000-3500000"'),
+                            metavar='')
+        
+        parser.add_argument('-d', '--density',
+                            action='store',
+                            default=None,
+                            type=str,
+                            help=('TSV file with marker density infomation..\n'
+                                  'This file must be formatted as "test/density.tsv".'),
                             metavar='')
         
         parser.add_argument('--mindif',

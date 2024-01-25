@@ -4,7 +4,6 @@ import csv
 import pandas as pd
 import sys
 import subprocess as sbp
-import matplotlib.pyplot as plt
 from mkdesigner.utils import read_vcf, time_stamp, prepare_cmd
 from mkdesigner.params import Params
 from mkdesigner.visualize_marker import VisualizeMarker
@@ -19,6 +18,8 @@ class MKSelect(object):
         self.fai = args.fai
         self.num_marker = args.num_marker
         self.target = args.target
+        self.density = args.density
+        self.type = args.type
         self.mindif = args.mindif
         self.maxdif = args.maxdif
 
@@ -29,6 +30,23 @@ class MKSelect(object):
         self.data_s = [] #VCF content selected
         self.primers = [] #Primer information of selected variants
         self.out_table = [] #Output table, easy to read
+        if self.density is None:
+            self.den_table = None
+        else:
+            self.den_table = pd.read_csv(self.density, sep='\t') 
+        #Marker density data
+
+        target_num = 0
+        if self.target is not None:
+            target_num = len(self.target)
+
+        if self.type == 'SNP':
+            if self.den_table is None:
+                self.out_stem = str(self.vcf).replace('.vcf', '_{}mk_selected_{}targets'.format(self.num_marker, target_num))
+            else:
+                self.out_stem = str(self.vcf).replace('.vcf', '_{}mk_selected_{}targets_adjusted'.format(self.num_marker, target_num))
+        else:
+            self.out_stem = str(self.vcf).replace('.vcf', '_{}mk_selected_min{}bp_max{}bp_{}'.format(self.num_marker, self.mindif,  self.maxdif, self.target))
 
     def readvcf(self):
         #Read input VCF
@@ -39,23 +57,13 @@ class MKSelect(object):
         self.header.append('##mkselect.py_{},num_primer={},target={}'.format(time_stamp(), self.num_marker, self.target))
         self.data = pd.DataFrame(self.data, columns=self.colnames)
 
-    '''    
-    def readfai(self):
-        #Import data from fasta index file
-        fai_list = []
-        with open(self.fai, 'r') as v:
-            reader = csv.reader(v, delimiter='\t')
-            for row in reader:
-                fai_list.append(row)
-        self.df_fai = pd.DataFrame(fai_list, columns=['chr','len','2','3','4'])
-    '''
-
     def filtervcf(self):
         #Select variants FILTER = PASS_P
         data_pass = self.data[self.data['FILTER'] == 'PASS_P']
 
         #Avoid lowercase
         if self.args.avoid_lowercase:
+            print(time_stamp(), 'Removing markers with primers containing lowercase sequences.', flush=True)
             #Correct infomation of primers
             check_primers = self.get_info_primers(data_pass)
             #col = ['name','num','chr','L_seq','R_seq','L_pos','R_pos','L_TM','R_TM','product_size']
@@ -69,58 +77,106 @@ class MKSelect(object):
                     delete_row.append(i)
             data_pass = data_pass.drop(data_pass.index[delete_row])
 
-        #Select variants by --mindif and --maxdif
-        str_len_ref = data_pass['REF'].str.len()
-        str_len_alt = data_pass['ALT'].str.len()
-        dif = str_len_ref - str_len_alt
-        dif_abs = dif.abs()
-        data_pass = data_pass[(dif_abs >= self.mindif) & (dif_abs <= self.maxdif)]
+        if self.type == 'INDEL':
+            #Select variants by --mindif and --maxdif
+            str_len_ref = data_pass['REF'].str.len()
+            str_len_alt = data_pass['ALT'].str.len()
+            dif = str_len_ref - str_len_alt
+            dif_abs = dif.abs()
+            data_pass = data_pass[(dif_abs >= self.mindif) & (dif_abs <= self.maxdif)]
+        
+        #Reset index number (row)
         data_pass = data_pass.reset_index(drop=True)
         
         #Select variants if target position is designated.
-        if self.target != '':
-            tmp = self.target.split(':')
-            if len(tmp) != 2:
-                print(time_stamp(), 'input of "--target" is invalid.', flush=True)
-                sys.exit(1)
-            tmp2 = tmp[1].split('-')
-            if len(tmp2) != 2:
-                print(time_stamp(), 'input of "--target" is invalid.', flush=True)
-                sys.exit(1)
-            target_chr = tmp[0]
-            target_start = int(tmp2[0])
-            target_end = int(tmp2[1])
-            delete_row = [] #row indexes to delete
-            for i in range(len(data_pass)):
-                if data_pass['#CHROM'][i] == target_chr and \
-                   int(data_pass['POS'][i]) > target_start and \
-                   int(data_pass['POS'][i]) < target_end:
-                    pass
-                else:
-                    delete_row.append(i)
-            data_pass = data_pass.drop(data_pass.index[delete_row])
-        self.data_s = data_pass
+        if self.target is not None:
+            pass_row = [] #row indexes passed
+
+            for h in range(len(self.target)):
+                tmp = self.target[h].split(':')
+                if len(tmp) != 2:
+                    print(time_stamp(), 'input of "--target" is invalid.', flush=True)
+                    sys.exit(1)
+                tmp2 = tmp[1].split('-')
+                if len(tmp2) != 2:
+                    print(time_stamp(), 'input of "--target" is invalid.', flush=True)
+                    sys.exit(1)
+                target_chr = tmp[0]
+                target_start = int(tmp2[0])
+                target_end = int(tmp2[1])
+                
+                for i in range(len(data_pass)):
+                    if data_pass['#CHROM'][i] == target_chr and \
+                    int(data_pass['POS'][i]) > target_start and \
+                    int(data_pass['POS'][i]) < target_end:
+                        pass_row.append(i)
+
+            #remove duplication and sort
+            pass_row = list(set(pass_row))
+            pass_row.sort()
+
+            #Select only designated position
+            data_pass = data_pass.iloc[pass_row]
+            #Reset index number (row)
+            data_pass = data_pass.reset_index(drop=True)
+
+        #Make dataset for select markers
+        intervals = [] 
+        cur_chr = ''
+
+        for i in range(len(data_pass)):
+            if data_pass.at[data_pass.index[i], '#CHROM'] != cur_chr:
+                #When chromosome of [i] is different to [i+1]
+                intervals.append(10**20) #use 10**20 as instead of infinity
+                cur_chr = data_pass.at[data_pass.index[i], '#CHROM']
+                if self.den_table is not None:
+                    cur_den = self.den_table[self.den_table['chr'] == cur_chr]
+                    cur_den = cur_den.reset_index(drop=True)
+            else:
+                real_pos = [int(data_pass.at[data_pass.index[i-1], 'POS'])
+                            , int(data_pass.at[data_pass.index[i], 'POS'])]
+
+                #When there is no density information
+                if self.den_table is None:
+                    intervals.append(real_pos[1] - real_pos[0])
+                else: #with density information, adjust position
+                    adj_pos = []
+                    for pos in real_pos:
+                        new_pos = 0
+                        for j in range(len(cur_den)):
+                            st = int(cur_den.at[cur_den.index[j], 'start']) - 1
+                            en = int(cur_den.at[cur_den.index[j], 'end'])
+                            dn = float(cur_den.at[cur_den.index[j], 'density'])
+                            if st < pos:
+                                if pos < en:
+                                    new_pos = new_pos + int((pos - st) * dn)
+                                    break
+                                else:
+                                    new_pos = new_pos + int((en - st) * dn)
+                        adj_pos.append(new_pos)
+                    intervals.append(adj_pos[1] - adj_pos[0])
+
+        intervals.append(10**20) #length of list is len(data_s) + 1
+        #data_s       0   1   2   3   4   5
+        #intervals  0   1   2   3   4   5   6 #[0] and [6] are infinity
 
         #Decrease markers to a specified number (-n)
-        while self.num_marker < len(self.data_s):
-            intervals = [10**20] #use 10**20 as insted of infinity
-            current_chr = self.data_s.at[self.data_s.index[0], '#CHROM']
-            for i in range(len(self.data_s) - 1):
-                if self.data_s.at[self.data_s.index[i+1], '#CHROM'] != current_chr:
-                    intervals.append(10**20) #use 10**20 as instead of infinity
-                    current_chr = self.data_s.at[self.data_s.index[i], '#CHROM']
-                else:
-                    interval = (int(self.data_s.at[self.data_s.index[i+1],'POS']) - int(self.data_s.at[self.data_s.index[i], 'POS']))
-                    intervals.append(interval)
-            intervals.append(10**20) #length of list is len(data_s) + 1
-            #data_s       0   1   2   3   4   5
-            #intervals  0   1   2   3   4   5   6 #[0] and [6] are infinity
+        use_index = list(range(len(data_pass)))
+
+        while self.num_marker < len(use_index):
             shortest = intervals.index(min(intervals))
+
             if intervals[shortest - 1] < intervals[shortest + 1]:
-                remove_index = shortest - 1
+                intervals[shortest-1]=intervals[shortest-1]+intervals[shortest]
+                del use_index[shortest - 1]
             else:
-                remove_index = shortest - 1
-            self.data_s = self.data_s.drop(self.data_s.index[remove_index])
+                intervals[shortest+1]=intervals[shortest+1]+intervals[shortest]
+                del use_index[shortest]
+
+            del intervals[shortest]
+        
+        self.data_s = data_pass.iloc[use_index]
+        self.data_s = self.data_s.reset_index(drop=True)
 
         #Correct infomation of primers
         self.primers = self.get_info_primers(self.data_s)
@@ -169,7 +225,7 @@ class MKSelect(object):
 
     def output(self):
         #1. output VCF
-        out_vcf_name = str(self.vcf).replace('.vcf', '_{}mk_selected_min{}bp_max{}bp_{}.vcf'.format(self.num_marker, self.mindif,  self.maxdif, self.target))
+        out_vcf_name = '{}.vcf'.format(self.out_stem)
         with open(out_vcf_name, 'w') as o:
             for h in self.header:
                 o.write('{}\n'.format(h))
@@ -198,36 +254,17 @@ class MKSelect(object):
             sys.exit(1) 
 
         #2. output primer data
-        out_table_name = str(self.vcf).replace('.vcf', '_{}mk_selected_min{}bp_max{}bp_{}.txt'.format(self.num_marker, self.mindif,  self.maxdif, self.target))
-        self.out_table.to_csv(out_table_name, sep='\t', header=True, index=False)
+        self.out_table.to_csv('{}.txt'.format(self.out_stem), sep='\t', header=True, index=False)
 
         print(time_stamp(), '{} markers were selected.\n'.format(len(self.data_s)), flush=True)
 
     def draw(self):
-        out_vcf_name = str(self.vcf).replace('.vcf', '_{}mk_selected_min{}bp_max{}bp_{}.vcf'.format(self.num_marker, self.mindif,  self.maxdif, self.target))
-        out_png_name = str(self.vcf).replace('.vcf', '_{}mk_selected_min{}bp_max{}bp_{}.png'.format(self.num_marker, self.mindif,  self.maxdif, self.target))
+        out_vcf_name = '{}.vcf'.format(self.out_stem)
+        out_png_name = '{}.png'.format(self.out_stem)
 
-        vm = VisualizeMarker(out_vcf_name, out_png_name, self.fai)
+        vm = VisualizeMarker(out_vcf_name, out_png_name, self.fai, False)
         vm.run()
-
-        #230921 modified to use python only
-        '''
-        path = os.path.dirname(os.path.abspath(__file__))
-        cmd1 = 'Rscript {}/visualize_marker.R {} {} {}'.format(path, out_vcf_name, self.fai, out_png_name)
-        cmd1 = prepare_cmd(cmd1)
-        try:
-            sbp.run(cmd1,
-                    stdout=sbp.DEVNULL,
-                    stderr=sbp.DEVNULL,
-                    shell=True, check=True)
-        except sbp.CalledProcessError:
-            print(time_stamp(),
-              'Error occured drawing marker position. '
-              'Maybe File name of fasta index is wrong.',
-              flush=True)
-            sys.exit(1) 
-        '''
-        
+    
 
 def main():
     print(time_stamp(), 'MKSelect started.', flush=True)

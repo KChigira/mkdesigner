@@ -1,0 +1,4 @@
+chr	start	end	density
+test	1	100000	1
+test	100001	400000	0.2
+test	400001	1000000	1
