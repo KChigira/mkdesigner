@@ -1,5 +1,5 @@
 # 'MKDesigner' User Guide
-#### version 0.1.1
+#### version 0.3.4
 
 ## Table of contents
 - [Outline](#Outline)
@@ -28,7 +28,7 @@ Primer3 is a convenient tool for designing primers against target sequences, ava
 ### Install via bioconda
 We recommend that you install the MKDesigner in a dedicated environment.
 ```
-conda create -n mkdesigner python=3.8 mkdesigner
+conda create -n mkdesigner mkdesigner
 ```
 
 #### Dependencies
