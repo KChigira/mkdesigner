@@ -25,3 +25,17 @@ mkvcf -r test_ref.fasta \
       -b lineB_sorted_reads.bam \
       -n lineA -n lineB \
       -p test_mkvcf_4 --cpu 4
+
+#240624 ver. 0.3.4
+mkvcf -r test_ref.fasta \
+      -b lineA_sorted_reads.bam \
+      -b lineB_sorted_reads.bam \
+      -n lineA -n lineB \
+      -p test_mkvcf_4 --cpu 4
+
+#240626 ver. 0.4.1
+mkvcf -r test_ref.fasta \
+      -b lineA_sorted_reads.bam \
+      -b lineB_sorted_reads.bam \
+      -n lineA -n lineB \
+      -O test041 --cpu 4

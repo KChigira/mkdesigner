@@ -25,7 +25,7 @@ class Params(object):
     def mkvcf_options(self):
         parser = argparse.ArgumentParser(description='MKDesigner version {}'.format(__version__),
                                          formatter_class=argparse.RawTextHelpFormatter)
-        parser.usage = ('mkvcf -r <FASTA> -b <BAM_1> -b <BAM_2>... -n <name_1> -n <name_2>... -p <Project name>\n')
+        parser.usage = ('mkvcf -r <FASTA> -b <BAM_1> -b <BAM_2>... -n <name_1> -n <name_2>... -O <STRING>\n')
 
         # set options
         parser.add_argument('-r', '--ref',
@@ -55,12 +55,12 @@ class Params(object):
                                   'as -b.'),
                             metavar='')
         
-        parser.add_argument('-p', '--project',
+        parser.add_argument('-O', '--output',
                             action='store',
                             required=True,
                             type=str,
-                            help=('Name of project (must be unique).\n'
-                                  'This will be output directory name.'),
+                            help=('Identical name (must be unique).\n'
+                                  'This will be stem of output directory name.'),
                             metavar='')
                             
         parser.add_argument('--cpu',
@@ -80,7 +80,8 @@ class Params(object):
         parser = argparse.ArgumentParser(description='MKDesigner version {}'.format(__version__),
                                          formatter_class=argparse.RawTextHelpFormatter)
         parser.usage = ('mkprimer -r <FASTA> -V <VCF> -n1 <name1> -n2 <name2>\n'
-                        '         -p <Project name> -t <SNP or INDEL>\n'
+                        '         -O <STRING> --type <SNP or INDEL>\n'
+                        '         [--target <Target position>]\n'
                         '         [--mindep <INT>] [--maxdep <INT>]\n'
                         '         [--min_prodlen <INT>] [--max_prodlen <INT>]\n'
                         '         [--margin <INT>] [--max_distance <INT>]')
@@ -120,20 +121,30 @@ class Params(object):
                                   'This parameter can be specified multiple times to design common markers for multiple varieties.\n'),
                             metavar='')
         
-        parser.add_argument('-p', '--project',
+        parser.add_argument('-O', '--output',
                             action='store',
                             required=True,
                             type=str,
-                            help=('Name of project (must be unique).\n'
-                                  'This will be output directory name.'),
+                            help=('Identical name (must be unique).\n'
+                                  'This will be stem of output directory name.'),
                             metavar='')
         
-        parser.add_argument('-t', '--type',
+        parser.add_argument('-T', '--type',
                             action='store',
                             required=True,
                             choices=['SNP',  'INDEL'],
                             help=('Type of variants.\n'
                                   'SNP or INDEL are supported.'),
+                            metavar='')
+        
+        parser.add_argument('-t', '--target',
+                            action='append',
+                            default=None,
+                            type=str,
+                            help=('Target position where primers designed/\n'
+                                  'e.g. "chr01:1000000-3500000"\n'
+                                  'If not specified, the program process whole genome.\n'
+                                  'This parameter can be specified multiple times.'),
                             metavar='')
         
         parser.add_argument('--mindep',
@@ -265,6 +276,7 @@ class Params(object):
                                          formatter_class=argparse.RawTextHelpFormatter)
         parser.usage = ('mkselect -i <FASTA Index file>\n'
                         '         -V <VCF with Primer> -n <INT>\n'
+                        '         -O <STRING>\n'
                         '         [-t <Target position>]\n'
                         '         [-d <TSV with marker density infomation>]\n'
                         '         [--avoid_lowercase]\n')
@@ -292,12 +304,21 @@ class Params(object):
                             help=('Number of markers selected.'),
                             metavar='')
         
+        parser.add_argument('-O', '--output',
+                            action='store',
+                            required=True,
+                            type=str,
+                            help=('Identical name (must be unique).\n'
+                                  'This will be stem of output directory name.'),
+                            metavar='')
+        
         parser.add_argument('-t', '--target',
                             action='append',
                             default=None,
                             type=str,
-                            help=('Target position where primers designed/\n'
-                                  'e.g. "chr01:1000000-3500000"'),
+                            help=('Target position where primers designed\n'
+                                  'e.g. "chr01:1000000-3500000"\n'
+                                  'This parameter can be specified multiple times.'),
                             metavar='')
         
         parser.add_argument('-d', '--density',
@@ -306,14 +327,6 @@ class Params(object):
                             type=str,
                             help=('TSV file with marker density infomation..\n'
                                   'This file must be formatted as "test/density.tsv".'),
-                            metavar='')
-        
-        parser.add_argument('--type',
-                            action='store',
-                            default='SNP',
-                            choices=['SNP',  'INDEL'],
-                            help=('Type of variants.\n'
-                                  'SNP or INDEL are supported.'),
                             metavar='')
         
         parser.add_argument('--mindif',
@@ -346,9 +359,9 @@ class Params(object):
     
     def mkvcf_check_args(self, args):
         #Does a project file with the same name exist?
-        if os.path.isdir(args.project):
+        if os.path.isdir('{}_mkvcf'.format(args.output)):
             sys.stderr.write(('  Output directory already exist.\n'
-                              '  Please rename the project name.\n'))
+                              '  Please rename the --output.\n'))
             sys.exit(1)
 
         #Is the extentions of files designeated as BAM really '.bam' ?
@@ -373,8 +386,21 @@ class Params(object):
 
     def mkprimer_check_args(self, args):
         #Does a project file with the same name exist?
-        if os.path.isdir(args.project):
+        if os.path.isdir('{}_mkprimer'.format(args.output)):
             sys.stderr.write(('  Output directory already exist.\n'
-                              '  Please rename the project name.\n'))
+                              '  Please rename the --output.\n'))
+            sys.exit(1)
+
+    def mkselect_check_args(self, args):
+        #Does a directory with the same name exist?
+        if os.path.isdir('{}_mkselect'.format(args.output)):
+            sys.stderr.write(('  Output directory already exist.\n'
+                              '  Please rename the --output.\n'))
+            sys.exit(1)
+        if not os.path.isfile('{}'.format(args.vcf)):
+            sys.stderr.write('  Input VCF does not exist.\n')
+            sys.exit(1)
+        if not os.path.isfile('{}'.format(args.fai)):
+            sys.stderr.write('  Input FASTA index does not exist.\n')
             sys.exit(1)
 

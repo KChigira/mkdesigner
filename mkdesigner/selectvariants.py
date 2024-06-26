@@ -6,11 +6,12 @@ from mkdesigner.utils import read_vcf, time_stamp
 class SelectVariants(object):
     def __init__(self, args):
         self.args = args
-        self.out = args.project
+        self.out = args.middir
         self.name1 = args.name1
         self.name2 = args.name2
         self.mindep = args.mindep
         self.maxdep = args.maxdep
+        self.target = args.target
 
         self.refidx = '{}/ref/{}.fai'.format(self.out, os.path.basename(args.ref))
         self.vcf = '{}/vcf/{}'.format(self.out, os.path.basename(args.vcf))
@@ -48,11 +49,40 @@ class SelectVariants(object):
             for row in reader:
                 chrnames.append(row[0])
                 chrlens.append(row[1])
+        
+        #240626 added. 
+        #Select variants if target position is designated.
+        if self.target is not None:
+            self.target_chr = []
+            self.target_start = []
+            self.target_end = []
+            for h in range(len(self.target)):
+                tmp = self.target[h].split(':')
+                if len(tmp) != 2:
+                    print(time_stamp(), 'input of "--target" is invalid.', flush=True)
+                    sys.exit(1)
+                tmp2 = tmp[1].split('-')
+                if len(tmp2) != 2:
+                    print(time_stamp(), 'input of "--target" is invalid.', flush=True)
+                    sys.exit(1)
+                self.target_chr.append(tmp[0])
+                self.target_start.append(int(tmp2[0]))
+                self.target_end.append(int(tmp2[1]))
 
         #VCF format: [0]#CHROM, [1]POS, [2]ID, [3]REF, [4]ALT, [5]QUAL, [6]FILTER, [7]INFO, [8]FORMAT	
         #'selected' is list of VCF rows filtered by following conditions.
         selected = []
         for i in range(0,len(data)):
+            if self.target is not None:
+                flag = 0
+                for j in range(len(self.target_chr)):
+                    if data[i][0] == self.target_chr[j] and \
+                    int(data[i][1]) > self.target_start[j] and \
+                    int(data[i][1]) < self.target_end[j]:
+                        flag = 1
+                if flag == 0: #remove variants which are not target
+                    continue
+                
             if len(data[i][4].split(',')) > 1:
                 continue # remove multi allelic variants
             if self.args.type == 'SNP':
@@ -65,9 +95,9 @@ class SelectVariants(object):
                     continue #INDEL larger than 50bp are removed because they are suspecible.
             if data[i][6] != 'PASS':
                 continue # remove low quality variants
-            if int(data[i][1]) <= self.args.search_span:
+            if int(data[i][1]) <= self.args.scope:
                 continue # remove variants too close to 5' terminal
-            if int(data[i][1]) + self.args.search_span > int(chrlens[chrnames.index(data[i][0])]):
+            if int(data[i][1]) + self.args.scope > int(chrlens[chrnames.index(data[i][0])]):
                 continue # remove variants too close to 3' terminal
 
             #Check haplotype calling format.

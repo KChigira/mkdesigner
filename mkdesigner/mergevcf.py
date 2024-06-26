@@ -7,7 +7,7 @@ class MergeVcf(object):
 
     def __init__(self, args, is2nd=False):
         self.args = args
-        self.out = args.project
+        self.out = args.middir
 
         if is2nd:
             self.vcfdir = '{}/vcf_2nd/'.format(self.out)

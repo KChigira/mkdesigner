@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages # type: ignore
 from mkdesigner.__init__ import __version__
 
 setup(name='mkdesigner',

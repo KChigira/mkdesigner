@@ -87,7 +87,23 @@ mkselect -i test_mkprimer_indel_4/ref/test_ref.fasta.fai \
          -V test_mkprimer_indel_4/vcf/Merged_filtered_variants_selected_primer_added.vcf \
          -n 10000 --avoid_lowercase \
          --mindif 10 --maxdif 50
-
 mkselect -i test_mkprimer_snp_4/ref/test_ref.fasta.fai \
          -V test_mkprimer_snp_4/vcf/Merged_filtered_variants_selected_primer_added.vcf \
          -n 20 -d ./density.tsv --avoid_lowercase
+
+#240626 ver.0.4.1
+mkselect -i test041_SNP_mkprimer/for_draw.fai \
+         -V test041_SNP_mkprimer/test041_SNP_primer_added.vcf \
+         -n 10000 -O test041_SNP_01_all
+mkselect -i test041_SNP_mkprimer/for_draw.fai \
+         -V test041_SNP_mkprimer/test041_SNP_primer_added.vcf \
+         -n 20 --avoid_lowercase -O test041_SNP_02_20markers
+mkselect -i test041_INDEL_mkprimer/for_draw.fai \
+         -V test041_INDEL_mkprimer/test041_INDEL_primer_added.vcf \
+         -n 10000 -O test041_INDEL_01_all
+mkselect -i test041_INDEL_mkprimer/for_draw.fai \
+         -V test041_INDEL_mkprimer/test041_INDEL_primer_added.vcf \
+         -n 10000 --mindif 5 -O test041_INDEL_02_mindif5
+mkselect -i test041_INDEL_mkprimer/for_draw.fai \
+         -V test041_INDEL_mkprimer/test041_INDEL_primer_added.vcf \
+         -n 10000 -t test:300000-400000 --mindif 3 -O test041_INDEL_03_targeted

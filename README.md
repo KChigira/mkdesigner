@@ -1,5 +1,5 @@
 # 'MKDesigner' User Guide
-#### version 0.3.4
+#### version 0.4.1
 
 ## Table of contents
 - [Outline](#Outline)

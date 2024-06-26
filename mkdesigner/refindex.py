@@ -8,7 +8,7 @@ class RefIndex(object):
 
     def __init__(self, args):
         self.args = args
-        self.out = args.project
+        self.out = args.middir
         self.ref = '{}/ref/{}'.format(self.out, os.path.basename(args.ref))
 
     def run(self):

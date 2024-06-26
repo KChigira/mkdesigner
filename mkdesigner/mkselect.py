@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 import csv
-import pandas as pd
+import os
+import pandas as pd # type: ignore
 import sys
 import subprocess as sbp
 from mkdesigner.utils import read_vcf, time_stamp, prepare_cmd
@@ -13,15 +14,19 @@ args = pm.set_options()
 
 class MKSelect(object):
     def __init__(self, args):
+        pm.mkselect_check_args(args)
         self.args = args
         self.vcf = args.vcf
         self.fai = args.fai
         self.num_marker = args.num_marker
         self.target = args.target
         self.density = args.density
-        self.type = args.type
         self.mindif = args.mindif
         self.maxdif = args.maxdif
+
+        self.stem = args.output
+        self.dir = '{}_mkselect'.format(self.stem)
+        os.mkdir(self.dir)
 
         #VCF data
         self.header = [] #VCF header
@@ -36,17 +41,12 @@ class MKSelect(object):
             self.den_table = pd.read_csv(self.density, sep='\t') 
         #Marker density data
 
-        target_num = 0
-        if self.target is not None:
-            target_num = len(self.target)
-
-        if self.type == 'SNP':
-            if self.den_table is None:
-                self.out_stem = str(self.vcf).replace('.vcf', '_{}mk_selected_{}targets'.format(self.num_marker, target_num))
-            else:
-                self.out_stem = str(self.vcf).replace('.vcf', '_{}mk_selected_{}targets_adjusted'.format(self.num_marker, target_num))
-        else:
-            self.out_stem = str(self.vcf).replace('.vcf', '_{}mk_selected_min{}bp_max{}bp_{}'.format(self.num_marker, self.mindif,  self.maxdif, self.target))
+    def command(self):
+        #Output command info
+        command = ' '.join(sys.argv)
+        fn = '{}/command.txt'.format(self.dir)
+        with open(fn, 'w') as f:
+            f.write('{}\n'.format(command))
 
     def readvcf(self):
         #Read input VCF
@@ -77,14 +77,12 @@ class MKSelect(object):
                     delete_row.append(i)
             data_pass = data_pass.drop(data_pass.index[delete_row])
             
-
-        if self.type == 'INDEL':
-            #Select variants by --mindif and --maxdif
-            str_len_ref = data_pass['REF'].str.len()
-            str_len_alt = data_pass['ALT'].str.len()
-            dif = str_len_ref - str_len_alt
-            dif_abs = dif.abs()
-            data_pass = data_pass[(dif_abs >= self.mindif) & (dif_abs <= self.maxdif)]
+        #Select variants by --mindif and --maxdif
+        str_len_ref = data_pass['REF'].str.len()
+        str_len_alt = data_pass['ALT'].str.len()
+        dif = str_len_ref - str_len_alt
+        dif_abs = dif.abs()
+        data_pass = data_pass[(dif_abs >= self.mindif) & (dif_abs <= self.maxdif)]
         
         #Reset index number (row)
         data_pass = data_pass.reset_index(drop=True)
@@ -197,7 +195,7 @@ class MKSelect(object):
 
     def maketable(self):
         name_line = self.data_s.columns[9:]
-        out_table_col = ['Chr','Pos','ID','Left','Right','L_TM','R_TM']
+        out_table_col = ['Chr','Pos','ID','Left','Right','L_TM','R_TM','Dif']
         for str_n in name_line:
             out_table_col.append('{}_Size'.format(str_n))
 
@@ -211,22 +209,27 @@ class MKSelect(object):
             out_row.append(self.primers.at[self.primers.index[i], 'R_seq'])
             out_row.append(self.primers.at[self.primers.index[i], 'L_TM'])
             out_row.append(self.primers.at[self.primers.index[i], 'R_TM'])
+
+            #Product size
+            prod_size = int(self.primers.at[self.primers.index[i], 'product_size'])
+            len_alt = len(self.data_s.at[self.data_s.index[i], 'ALT'])
+            len_ref = len(self.data_s.at[self.data_s.index[i], 'REF'])
+            out_row.append(abs(len_alt-len_ref)) #'Dif'
+
             for line in name_line:
                 line_info = self.data_s.at[self.data_s.index[i], line]
                 #ex. 1/1:0,6:6:18:270,18,0
                 if line_info[0:3] == '0/0':
-                    out_row.append(self.primers.at[self.primers.index[i], 'product_size'])
+                    out_row.append(prod_size)
                 elif line_info[0:3] == '1/1':
-                    size = (int(self.primers.at[self.primers.index[i], 'product_size']) +
-                            len(self.data_s.at[self.data_s.index[i], 'ALT']) - 
-                            len(self.data_s.at[self.data_s.index[i], 'REF']))
+                    size = (prod_size + len_alt - len_ref)
                     out_row.append(size)
             out_list.append(out_row)
         self.out_table = pd.DataFrame(out_list, columns=out_table_col)
 
     def output(self):
         #1. output VCF
-        out_vcf_name = '{}.vcf'.format(self.out_stem)
+        out_vcf_name = '{}/{}.vcf'.format(self.dir, self.stem)
         with open(out_vcf_name, 'w') as o:
             for h in self.header:
                 o.write('{}\n'.format(h))
@@ -255,13 +258,13 @@ class MKSelect(object):
             sys.exit(1) 
 
         #2. output primer data
-        self.out_table.to_csv('{}.txt'.format(self.out_stem), sep='\t', header=True, index=False)
+        self.out_table.to_csv('{}/{}_primer_data.tsv'.format(self.dir, self.stem), sep='\t', header=True, index=False)
 
         print(time_stamp(), '{} markers were selected.\n'.format(len(self.data_s)), flush=True)
 
     def draw(self):
-        out_vcf_name = '{}.vcf'.format(self.out_stem)
-        out_png_name = '{}.png'.format(self.out_stem)
+        out_vcf_name = '{}/{}.vcf'.format(self.dir, self.stem)
+        out_png_name = '{}/{}.png'.format(self.dir, self.stem)
 
         vm = VisualizeMarker(out_vcf_name, out_png_name, self.fai)
         vm.run()
@@ -271,6 +274,7 @@ def main():
     print(time_stamp(), 'MKSelect started.', flush=True)
 
     prog = MKSelect(args)
+    prog.command()
     prog.readvcf()
     prog.filtervcf()
     prog.maketable()

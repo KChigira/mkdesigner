@@ -8,7 +8,7 @@ class HaploCall(object):
 
     def __init__(self, args, num, is2nd=False):
         self.args = args
-        self.out = args.project
+        self.out = args.middir
         self.name = args.name[num]
         self.is2nd = is2nd
 

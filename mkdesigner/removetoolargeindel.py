@@ -6,7 +6,7 @@ from mkdesigner.utils import call_log, prepare_cmd, read_vcf, time_stamp
 class RemoveTooLargeIndel(object):
     def __init__(self, args):
         self.args = args
-        self.out = args.project
+        self.out = args.middir
         self.vcf = '{}/vcf_1st/Merged_filtered_variants.vcf'.format(self.out)
         self.outvcf = '{}/vcf_1st/Merged_filtered_variants_too_large_indel_removed.vcf'.format(self.out)
         

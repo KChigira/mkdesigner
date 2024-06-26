@@ -3,7 +3,7 @@ from multiprocessing import Pool
 import os
 import subprocess as sbp
 import sys
-import pandas as pd
+import pandas as pd # type: ignore
 from mkdesigner.utils import call_log, prepare_cmd, read_vcf, time_stamp
 
 class AddPrimerToVcf(object):
@@ -16,11 +16,11 @@ class AddPrimerToVcf(object):
     def __init__(self, args):
         self.args = args
 
-        self.out = args.project
+        self.out = args.middir
         self.ref = '{}/ref/{}'.format(self.out, os.path.basename(args.ref))
         self.vcf = '{}/vcf/{}_selected.vcf'.format(self.out, os.path.splitext(os.path.basename(args.vcf))[0])
         self.cpu = args.cpu
-        self.scope = args.search_span
+        self.scope = args.scope
         self.margin = args.margin
 
         self.output_tmp = '{}/vcf/{}_selected_tmp.vcf'.format(self.out, os.path.splitext(os.path.basename(args.vcf))[0])
@@ -141,7 +141,7 @@ class AddPrimerToVcf(object):
                     break
 
             #Delete if it is impossible to make primers because span is too small.
-            min_span = self.args.primer_min_size + self.args.margin
+            min_span = self.args.primer_min_size + self.margin
             if span[0] <= min_span or span[1] <= min_span:
                 delete_row.append(i)
         dataframe_pass = dataframe.drop(dataframe.index[delete_row])
@@ -224,7 +224,7 @@ class AddPrimerToVcf(object):
         '''
 
         #Make parameters for primer3
-        target_start = self.scope - self.args.margin + 1
+        target_start = self.scope - self.margin + 1
         var_len = len(series['REF'])
         target_length = var_len + self.margin * 2
         #Avoid designing primers at surrounding variants.
@@ -237,9 +237,9 @@ class AddPrimerToVcf(object):
         #For INDEL markers, product length is determined by 
         # an expression with the size of INDEL as a variable.
         if self.args.type == 'SNP' :
-            max_prd = self.args.max_prodlen
-            opt_prd = self.args.opt_prodlen
-            min_prd = self.args.min_prodlen
+            max_prd = self.args.args.max_prodlen
+            opt_prd = self.args.args.opt_prodlen
+            min_prd = self.args.args.min_prodlen
         elif self.args.type == 'INDEL' :
             X = abs(len(series['REF']) - len(series['ALT']))
             if len(series['REF']) > len(series['ALT']) :
@@ -257,16 +257,16 @@ class AddPrimerToVcf(object):
                 opt_prd = round((max_prd * 0.75) - ref_shorter)
             min_prd = 50 + alt_shorter
 
-        abspath = self.args.primer3_loc.replace('~', '{}'.format(os.environ['HOME']))
+        abspath = self.args.args.primer3_loc.replace('~', '{}'.format(os.environ['HOME']))
         primer3_data_list = [
             'SEQUENCE_ID={}\n'.format(st_out[0]),
             'SEQUENCE_TEMPLATE={}\n'.format(st_out[1]),
             'SEQUENCE_TARGET={},{}\n'.format(target_start, target_length),
             'SEQUENCE_EXCLUDED_REGION={}\n'.format(exclude),
-            'PRIMER_NUM_RETURN={}\n'.format(self.args.primer_num_consider),
-            'PRIMER_OPT_SIZE={}\n'.format(self.args.primer_opt_size),
-            'PRIMER_MIN_SIZE={}\n'.format(self.args.primer_min_size),
-            'PRIMER_MAX_SIZE={}\n'.format(self.args.primer_max_size),
+            'PRIMER_NUM_RETURN={}\n'.format(self.args.args.primer_num_consider),
+            'PRIMER_OPT_SIZE={}\n'.format(self.args.args.primer_opt_size),
+            'PRIMER_MIN_SIZE={}\n'.format(self.args.args.primer_min_size),
+            'PRIMER_MAX_SIZE={}\n'.format(self.args.args.primer_max_size),
             'PRIMER_PRODUCT_OPT_SIZE={}\n'.format(opt_prd),
             'PRIMER_PRODUCT_SIZE_RANGE={}-{}\n'.format(min_prd, max_prd),
             'PRIMER_OPT_GC_PERCENT=50.0\n',
@@ -293,7 +293,7 @@ class AddPrimerToVcf(object):
     def primer3(self, input):
         name_result = str(input).replace('/format_', '/result_')
         cmd = '{}primer3_core --output {} {} \
-                >> {}/log/primer3.log 2>&1'.format(self.args.primer3_loc, name_result, input, self.out)
+                >> {}/log/primer3.log 2>&1'.format(self.args.args.primer3_loc, name_result, input, self.out)
         cmd = prepare_cmd(cmd)
         try:
             sbp.run(cmd,
@@ -435,9 +435,9 @@ class AddPrimerToVcf(object):
                 mm = mm + mm3t
 
             mm = mm + df['mismatch'][j] # add internal mismuch number
-            if mm > self.args.mismatch_allowed:
+            if mm > self.args.args.mismatch_allowed:
                 continue
-            if mm3t > self.args.mismatch_allowed_3_terminal:
+            if mm3t > self.args.args.mismatch_allowed_3_terminal:
                 continue
             
             qseq = df['qseq'][j][-5:]
@@ -445,7 +445,7 @@ class AddPrimerToVcf(object):
             for k in range(5-mm3t):
                 if qseq[4-k] != sseq[4-k]:
                     mm3t += 1
-            if mm3t > self.args.mismatch_allowed_3_terminal:
+            if mm3t > self.args.args.mismatch_allowed_3_terminal:
                 continue
 
             if df_selected is None:
@@ -472,7 +472,7 @@ class AddPrimerToVcf(object):
                     if df_selected.at[df_selected.index[j+cnt], 'qaccver'] != pri: break
                     if df_selected.at[df_selected.index[j+cnt], 'saccver'] != chr: break
                     if df_selected.at[df_selected.index[j+cnt], 'sstrand'] == 'minus':
-                        if df_selected.at[df_selected.index[j+cnt], 'sstart'] - pos < self.args.unintended_prod_size_allowed:
+                        if df_selected.at[df_selected.index[j+cnt], 'sstart'] - pos < self.args.args.unintended_prod_size_allowed:
                             if df_output is None:
                                 df_output = pd.DataFrame([df_selected.iloc[j]])
                             else:
