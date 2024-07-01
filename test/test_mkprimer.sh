@@ -134,3 +134,15 @@ mkprimer -r test_ref.fasta \
          --min_prodlen 150 --opt_prodlen 180 --max_prodlen 280 \
          --search_span 140 --primer_min_size 24 \
          --primer_opt_size 24 --primer_max_size 24
+
+
+#240701 ver.0.4.2
+#SNP
+mkprimer -r test_ref.fasta \
+         -V test042_mkvcf/test042_ready_for_mkprimer.vcf \
+         -n1 lineA -n2 lineB \
+         -O test042 --type SNP \
+         --mindep 5 --maxdep 120 --mismatch_allowed 5 --cpu 24 \
+         --min_prodlen 150 --opt_prodlen 180 --max_prodlen 280 \
+         --search_span 140 --primer_min_size 24 \
+         --primer_opt_size 24 --primer_max_size 24

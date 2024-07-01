@@ -107,3 +107,15 @@ mkselect -i test041_INDEL_mkprimer/for_draw.fai \
 mkselect -i test041_INDEL_mkprimer/for_draw.fai \
          -V test041_INDEL_mkprimer/test041_INDEL_primer_added.vcf \
          -n 10000 -t test:300000-400000 --mindif 3 -O test041_INDEL_03_targeted
+
+
+#240701 ver.0.4.2
+mkselect -i test042_mkprimer/for_draw.fai \
+         -V test042_mkprimer/test042_primer_added.vcf \
+         -n 10 -O test042 -d ./density.tsv
+mkselect -i test042_mkprimer/for_draw.fai \
+         -V test042_mkprimer/test042_primer_added.vcf \
+         -n 10 -O test042_1
+mkselect -i test042_mkprimer/for_draw.fai \
+         -V test042_mkprimer/test042_primer_added.vcf \
+         -n 10000 -O test042_2

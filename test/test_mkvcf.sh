@@ -39,3 +39,10 @@ mkvcf -r test_ref.fasta \
       -b lineB_sorted_reads.bam \
       -n lineA -n lineB \
       -O test041 --cpu 4
+
+#240626 ver. 0.4.2
+mkvcf -r test_ref.fasta \
+      -b lineA_sorted_reads.bam \
+      -b lineB_sorted_reads.bam \
+      -n lineA -n lineB \
+      -O test042 --cpu 4
