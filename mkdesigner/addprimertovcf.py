@@ -257,7 +257,6 @@ class AddPrimerToVcf(object):
                 opt_prd = round((max_prd * 0.75) - ref_shorter)
             min_prd = 50 + alt_shorter
 
-        abspath = self.args.args.primer3_loc.replace('~', '{}'.format(os.environ['HOME']))
         primer3_data_list = [
             'SEQUENCE_ID={}\n'.format(st_out[0]),
             'SEQUENCE_TEMPLATE={}\n'.format(st_out[1]),
@@ -280,7 +279,6 @@ class AddPrimerToVcf(object):
             'PRIMER_MAX_SELF_END=2\n',
             'PRIMER_MAX_POLY_X=4\n',
             'PRIMER_EXPLAIN_FLAG=1\n',
-            'PRIMER_THERMODYNAMIC_PARAMETERS_PATH={}primer3_config\n'.format(abspath),
             '=\n']
         primer3_data = ''.join(primer3_data_list)
 
@@ -292,8 +290,8 @@ class AddPrimerToVcf(object):
 
     def primer3(self, input):
         name_result = str(input).replace('/format_', '/result_')
-        cmd = '{}primer3_core --output {} {} \
-                >> {}/log/primer3.log 2>&1'.format(self.args.args.primer3_loc, name_result, input, self.out)
+        cmd = 'primer3_core --output {} {} \
+                >> {}/log/primer3.log 2>&1'.format(name_result, input, self.out)
         cmd = prepare_cmd(cmd)
         try:
             sbp.run(cmd,

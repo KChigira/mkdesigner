@@ -1,10 +1,9 @@
 # 'MKDesigner' User Guide
-#### version 0.4.1
+#### version 0.4.2
 
 ## Table of contents
 - [Outline](#Outline)
 - [Install](#Install)
-  + [Dependencies](#Dependencies)
   + [Install via bioconda](#Installation-using-bioconda)
 - [Usage](#Usage)
   + [Tutorial](#Tutorial)
@@ -32,28 +31,18 @@ conda create -n mkdesigner mkdesigner
 ```
 
 #### Dependencies
- - python >=3.8,<4.0
- - pandas >=2.0.2,<3.0.0
- - samtools >=1.6,<2.0
- - bcftools >=1.5,<2.0
- - blast >=2.14.0,<3.0.0
- - gatk4 >=4.4.0.0,<5.0.0.0
- - picard >=2.18.29,<3.0.0
- - r-base >=4.2.3, <5.0.0
+ - python >=3.8
+ - pandas >=2.0.2
+ - blast >=2.14.0
+ - gatk4 >=4.4.0.0
+ - picard >=2.18.29
+ - primer3 >=2.6.1
+ - samtools >=1.6
+ - bcftools >=1.5
+ - matplotlib-base
 
 Tools above are installed automatically.
- - Primer3 >=2.6.1
 
-Primer3 software must be installed manually.
-```
-cd ~
-sudo apt-get install -y build-essential g++ cmake git-all
-git clone https://github.com/primer3-org/primer3.git primer3
-cd primer3/src
-make
-make test
-```
-If you have already installed primer3 at other directory, you have to set the path when you run the program.
 
 #### Check about packages in dependency
 Dependent packages often get errors about shared libraries.
@@ -80,7 +69,7 @@ ln -s libcrypto.so.3 libcrypto.so.1.0.0
 ```
 
 ## Usage
-#### Tutorial
+### Tutorial
 We have a dataset for test.
 ```terminal:get_test_dataset
 git clone https://github.com/KChigira/mkdesigner.git
@@ -92,7 +81,7 @@ ls
 └── ...
 ```
 
-(1) Haplotype calling 
+#### (1) 'mkvcf': Haplotype calling 
 ```
 mkvcf -r test_ref.fasta \
       -b lineA_sorted_reads.bam \
@@ -100,28 +89,193 @@ mkvcf -r test_ref.fasta \
       -n lineA -n lineB \
       -p test --cpu 4(appropriately)
 ```
+Then, you will get the directory named 'test_mkvcf/' 
+```
+test
+├── test_mkvcf
+|    ├── test_ready_for_mkprimer.vcf
+|    ├── command.txt
+|    └── intermediate/ 
+└── ...
+``` 
+- 'test_ready_for_mkprimer.vcf' -----Output VCF file
+This file will be input file of 'mkprimer'
 
-(2) Get DNA markers and design PCR primers 
+
+#### (2) 'mkprimer': Get DNA markers and design PCR primers 
 ```
 mkprimer -r test_ref.fasta \
-         -V test/vcf_2nd/Merged_filtered_variants.vcf \
+         -V test_mkvcf/test_ready_for_mkprimer.vcf \
          -n1 lineA -n2 lineB \
-         -p test -t SNP \
-         --mindep 5 --maxdep 120 --cpu 4 \
-         --min_prodlen 150 --max_prodlen 280 \
-         --search_span 140
+         -O test --type SNP \
+         --mindep 5 --maxdep 120 --mismatch_allowed 5 --cpu 8(appropriately) \
+         --min_prodlen 150 --opt_prodlen 180 --max_prodlen 280 \
+         --search_span 140 --primer_min_size 24 \
+         --primer_opt_size 24 --primer_max_size 24
+```
+Then, you will get the directory named 'test_mkprimer/' 
+```
+test
+├── test_mkprimer
+|    ├── test_primer_added.vcf
+|    ├── for_draw.fai
+|    ├── command.txt
+|    └── intermediate/ 
+└── ...
+``` 
+
+- 'test_primer_added.vcf' -----Output VCF file
+- 'for_draw.fai' -----Fasta index file (For drawing the positions of markers)
+These files will be input file of 'mkselect'
+
+#### (3) 'mkselect': Choose an appropriate number of markers and draw their physical locations
+```
+mkselect -i test_mkprimer/for_draw.fai \
+         -V test_mkprimer/test_primer_added.vcf \
+         -n 10 -O test
+```
+Then, you will get the directory named 'test_mkselect/' 
+```
+test
+├── test_mkselect
+|    ├── test.vcf
+|    ├── test.png
+|    ├── test_primer_data.tsv
+|    └── command.txt
+└── ...
+``` 
+- 'test.vcf' -----VCF with only selected markers
+- 'test.png' -----Figure of indicates the positions of selected markers
+- 'test_primer_data.tsv' -----Useful information of primers and its anpllicons
+
+![test.png](./fig/test01.png)
+
+If you want to get the figure for all markers...
+```
+mkselect -i test_mkprimer/for_draw.fai \
+         -V test_mkprimer/test_primer_added.vcf \
+         -n 10000 -O test_all
+```
+![test_all.png](./fig/test02.png)
+
+### Commands
+```
+mkvcf -h
+usage: mkvcf -r <FASTA> -b <BAM_1> -b <BAM_2>... -n <name_1> -n <name_2>... -O <STRING>
+options:
+  -h, --help      show this help message and exit
+  -r , --ref      Reference fasta.
+  -b , --bam      Bam files for variant calling.
+                  e.g. -b bam1 -b bam2 ... 
+                  You must use this option 2 times or more
+                  to get markers in following analysis.
+  -n , --name     Variety name of each bam file.
+                  e.g. -n name_bam1 -n name_bam2 ... 
+                  You must use this option same times
+                  as -b.
+  -O , --output   Identical name (must be unique).
+                  This will be stem of output directory name.
+  --cpu           Number of CPUs to use.
+  -v, --version   show program's version number and exit
+```
+```
+mkprimer -h
+usage: mkprimer -r <FASTA> -V <VCF> -n1 <name1> -n2 <name2>
+         -O <output name> --type <SNP or INDEL>
+         [--target <Target position>]
+         [--mindep <INT>] [--maxdep <INT>]
+         [--min_prodlen <INT>] [--max_prodlen <INT>]
+         [--margin <INT>] [--max_distance <INT>]
+options:
+  -h, --help            show this help message and exit
+  -r , --ref            Reference fasta.
+  -V , --vcf            VCF file without filtering.
+                        Recommended to use VCF made by "mkvcf" command.
+                        VCF must contain GT and DP field.
+  -n1 , --name1         Variety name 1.
+                        Must match VCF column names.
+                        This parameter can be specified multiple times to design common markers for multiple varieties.
+  -n2 , --name2         Variety name 2.
+                        Must match VCF column names.
+                        This parameter can be specified multiple times to design common markers for multiple varieties.
+  -O , --output         Identical name (must be unique).
+                        This will be stem of output directory name.
+  -T , --type           Type of variants.
+                        SNP or INDEL are supported.
+  -t , --target         Target position where primers designed/
+                        e.g. "chr01:1000000-3500000"
+                        If not specified, the program process whole genome.
+                        This parameter can be specified multiple times.
+  --mindep              Variants with more depth than this
+                        are judged as valid mutations
+                        default: 2
+  --maxdep              Variants with less depth than this
+                        are judged as valid mutations
+                        default: 200
+  --mismatch_allowed    Primers with more mismatch than this
+                        are ignored in specificity check.
+                        default: 5
+  --mismatch_allowed_3_terminal 
+                        Primers with more mismatch than this
+                        in 5 bases of 3' terminal end
+                        are ignored in specificity check.
+                        default: 1
+  --unintended_prod_size_allowed 
+                        Primer pairs producing unintended PCR product which is shorter than this
+                        are ignored in specificity check.
+                        default: 4000
+  --min_prodlen         Minimum PCR product length.default: 150
+  --max_prodlen         Maximam PCR product length.
+                        default: 280
+  --opt_prodlen         Optical PCR product length.
+                        default: 180
+  --margin              Minimum distance from 3' terminal of primer to variant.
+                        default: 5
+  --search_span         Intervals to search for primers upstream and downstream variants.
+                        default: 140
+  --primer_num_consider 
+                        Primer number considering in primer3 software.
+                        default: 3
+  --primer_min_size     Minimum primer size
+                        default: 18
+  --primer_max_size     Maximum primer size
+                        default: 26
+  --primer_opt_size     Optical primer size
+                        default: 20
+  --cpu                 Number of CPUs to use.
+  -v, --version         show program's version number and exit
+```
+```
+mkselect -h
+usage: mkselect -i <FASTA Index file>
+         -V <VCF with Primer> -n <INT>
+         -O <STRING>
+         [-t <Target position>]
+         [-d <TSV with marker density infomation>]
+         [--avoid_lowercase]
+options:
+  -h, --help          show this help message and exit
+  -i , --fai          Index file (.fai) of reference fasta.
+  -V , --vcf          VCF file with primers.
+                      This file must be made by "mkprimer" command.
+  -n , --num_marker   Number of markers selected.
+  -O , --output       Identical name (must be unique).
+                      This will be stem of output directory name.
+  -t , --target       Target position where primers designed
+                      e.g. "chr01:1000000-3500000"
+                      This parameter can be specified multiple times.
+  -d , --density      TSV file with marker density infomation..
+                      This file must be formatted as "test/density.tsv".
+  --mindif            Set minimum differences
+                      of PCR product length between alleles.
+                      For SNP marker, this must be 0.
+  --maxdif            For indel marker, set maximum differences
+                      of PCR product length between alleles.
+  --avoid_lowercase   Select only primers written by uppercase.
+                      Lowercase may mean repeat sequence.
+  -v, --version       show program's version number and exit`
 ```
 
-(3) Choose an appropriate number of markers and draw their physical locations
-```
-mkselect -i test08/ref/test_ref.fasta.fai \
-         -V test08/vcf/Merged_filtered_variants_selected_primer_added.vcf \
-         -n 30
-```
-
-#### Commands
-
-comming soon.
 
 ## References
 [1] Untergasser A, Cutcutache I, Koressaar T, Ye J, Faircloth BC, Remm M and Rozen SG.

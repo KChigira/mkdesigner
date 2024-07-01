@@ -80,7 +80,7 @@ class Params(object):
         parser = argparse.ArgumentParser(description='MKDesigner version {}'.format(__version__),
                                          formatter_class=argparse.RawTextHelpFormatter)
         parser.usage = ('mkprimer -r <FASTA> -V <VCF> -n1 <name1> -n2 <name2>\n'
-                        '         -O <STRING> --type <SNP or INDEL>\n'
+                        '         -O <output name> --type <SNP or INDEL>\n'
                         '         [--target <Target position>]\n'
                         '         [--mindep <INT>] [--maxdep <INT>]\n'
                         '         [--min_prodlen <INT>] [--max_prodlen <INT>]\n'
@@ -250,14 +250,6 @@ class Params(object):
                             type=int,
                             help=('Optical primer size\ndefault: 20'),
                             metavar='')
-
-        parser.add_argument('--primer3_loc',
-                            action='store',
-                            default='~/primer3/src/',
-                            type=str,
-                            help=('Location of Primer3 software (primer3_core).\n'
-                                  'default: ~/primer3/src/'),
-                            metavar='')
         
         parser.add_argument('--cpu',
                             action='store',
@@ -364,8 +356,16 @@ class Params(object):
                               '  Please rename the --output.\n'))
             sys.exit(1)
 
+        if not os.path.isfile('{}'.format(args.ref)):
+            sys.stderr.write('  Input reference FASTA does not exist.\n')
+            sys.exit(1)
+
+        #Do BAM files exist?
         #Is the extentions of files designeated as BAM really '.bam' ?
         for input_name in args.bam:
+                if not os.path.isfile('{}'.format(input_name)):
+                    sys.stderr.write('  At least one of input BAM does not exist.\n')
+                    sys.exit(1)
                 ext = os.path.splitext(input_name)
                 if ext[-1] != '.bam':
                     sys.stderr.write(('  Please check input BAM file "{}".\n'
@@ -390,6 +390,12 @@ class Params(object):
             sys.stderr.write(('  Output directory already exist.\n'
                               '  Please rename the --output.\n'))
             sys.exit(1)
+        if not os.path.isfile('{}'.format(args.vcf)):
+            sys.stderr.write('  Input VCF does not exist.\n')
+            sys.exit(1)
+        if not os.path.isfile('{}'.format(args.ref)):
+            sys.stderr.write('  Input reference FASTA does not exist.\n')
+            sys.exit(1)
 
     def mkselect_check_args(self, args):
         #Does a directory with the same name exist?
@@ -403,4 +409,8 @@ class Params(object):
         if not os.path.isfile('{}'.format(args.fai)):
             sys.stderr.write('  Input FASTA index does not exist.\n')
             sys.exit(1)
+        if args.density != None:
+            if not os.path.isfile('{}'.format(args.density)):
+                sys.stderr.write(' Input file for adjusting marker density does not exist.\n')
+                sys.exit(1)
 
