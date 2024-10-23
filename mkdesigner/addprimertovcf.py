@@ -3,7 +3,8 @@ from multiprocessing import Pool
 import os
 import subprocess as sbp
 import sys
-import pandas as pd # type: ignore
+import pandas as pd
+import timeout_decorator # type: ignore
 from mkdesigner.utils import call_log, prepare_cmd, read_vcf, time_stamp
 
 class AddPrimerToVcf(object):
@@ -22,6 +23,9 @@ class AddPrimerToVcf(object):
         self.cpu = args.cpu
         self.scope = args.scope
         self.margin = args.margin
+        self.limit = args.limit
+        self.timeout = args.timeout
+
 
         self.output_tmp = '{}/vcf/{}_selected_tmp.vcf'.format(self.out, os.path.splitext(os.path.basename(args.vcf))[0])
         self.output_vcf = '{}/vcf/{}_selected_primer_added.vcf'.format(self.out, os.path.splitext(os.path.basename(args.vcf))[0])
@@ -60,10 +64,20 @@ class AddPrimerToVcf(object):
         print(time_stamp(),
               'Input VCF has {} variants.'.format(nrow_all),
               flush=True)
+        
         print(time_stamp(),
               'Removing variants which are impossible to be markers.',
               flush=True)
         self.data = self.delete_impossible_variants(self.data)
+        nrow = len(self.data)
+        print(time_stamp(),
+              '{} variants are survived.'.format(nrow),
+              flush=True)
+
+        print(time_stamp(),
+              'Reducing variants to the specified number (--limit).',
+              flush=True)
+        self.data = self.reduce_variants(self.data)
         nrow = len(self.data)
         print(time_stamp(),
               '{} variants are selected for making primers.'.format(nrow),
@@ -76,6 +90,7 @@ class AddPrimerToVcf(object):
         no_primer = 0
         non_specific = 0
         success = 0
+        blast_to = 0
         #Multi processing
         ##############################################
         with Pool(self.cpu) as p:
@@ -96,6 +111,9 @@ class AddPrimerToVcf(object):
             elif status == 2:
                 success += 1
                 self.data.at[self.data.index[id], 'FILTER'] = 'PASS_P'
+            elif status == 9:
+                blast_to += 1
+                self.data.at[self.data.index[id], 'FILTER'] = 'BLAST_TIMEOUT'
             self.data.at[self.data.index[id], 'INFO'] += add_str
 
         with open(self.output_vcf, 'w') as o:
@@ -120,7 +138,10 @@ class AddPrimerToVcf(object):
             sys.exit(1) 
 
         print(time_stamp(),
-              'Selecting primer has been finished.\n{} variants are selected from {} candidates.\n(No primer: {} variants, Only non-specific primer: {} variants)'.format(success, nrow, no_primer,non_specific),
+              'Selecting primer has been finished.\n\
+               {} variants are selected from {} candidates.\n\
+               (No primer: {} variants, Only non-specific primer: {} variants,\n\
+               BLAST timeout: {} variants)'.format(success, nrow, no_primer, non_specific, blast_to),
               flush=True)
         print(time_stamp(),
               'Done.',
@@ -148,8 +169,44 @@ class AddPrimerToVcf(object):
         dataframe_pass = dataframe_pass.reset_index(drop=True)
         return dataframe_pass
 
+    def reduce_variants(self, dataframe):
+        #Make dataset for select markers
+        intervals = [] 
+        cur_chr = ''
+
+        for i in range(len(dataframe)):
+            if dataframe.at[dataframe.index[i], '#CHROM'] != cur_chr:
+                #When chromosome of [i] is different to [i+1]
+                intervals.append(10**20) #use 10**20 as instead of infinity
+                cur_chr = dataframe.at[dataframe.index[i], '#CHROM']
+            else:
+                intervals.append(int(dataframe.at[dataframe.index[i], 'POS']) 
+                                 - int(dataframe.at[dataframe.index[i-1], 'POS']))
+        intervals.append(10**20) #length of list is len(data_s) + 1
+        #data_s       0   1   2   3   4   5
+        #intervals  0   1   2   3   4   5   6 #[0] and [6] are infinity
+
+        #Decrease markers to a specified number (-n)
+        use_index = list(range(len(dataframe)))
+
+        while self.limit < len(use_index):
+            shortest = intervals.index(min(intervals))
+
+            if intervals[shortest - 1] < intervals[shortest + 1]:
+                intervals[shortest-1]=intervals[shortest-1]+intervals[shortest]
+                del use_index[shortest - 1]
+            else:
+                intervals[shortest+1]=intervals[shortest+1]+intervals[shortest]
+                del use_index[shortest]
+
+            del intervals[shortest]
+        
+        dataframe_pass = dataframe.iloc[use_index]
+        dataframe_pass = dataframe_pass.reset_index(drop=True)
+        return dataframe_pass
+
     def parallel(self, i):
-        #[0]:row number [1]:status(0 means NO_PRIMER, 1 means NON_SPECIFIC, 2 means PASS) [2]description for adding primer infomation
+        #[0]:row number [1]:status(0 means NO_PRIMER, 1 means NON_SPECIFIC, 2 means PASS, 9 means BLAST_TIMEOUT) [2]description for adding primer infomation
         return_list = [i, 0, ';PRIMER=']
 
         series = self.data.iloc[i, :]
@@ -168,7 +225,14 @@ class AddPrimerToVcf(object):
             return return_list
         blastn_query_file = blastn_data_list[0]
         df_primer_info = blastn_data_list[1]
-        blastn_result_file = self.blastn(blastn_query_file)
+
+        #241023 set timeout
+        try:
+            blastn_result_file = self.blastn(blastn_query_file, self.timeout)
+        except timeout_decorator.TimeoutError:
+            return_list = [i, 9, ';PRIMER=']
+            return return_list
+        
         df_filtered = self.filter_blastn_result(blastn_result_file, df_primer_info['L_seq'], df_primer_info['R_seq'])
         if df_filtered.shape[0] <= 1:
             return_list = [i, 1, ';PRIMER=']
@@ -357,26 +421,29 @@ class AddPrimerToVcf(object):
         return_list = [name_query, primer_info]
         return return_list
 
-    def blastn(self, input):
-        name_result = str(input).replace('/query_', '/blastn_')
-        cmd = 'blastn -db {} -query {} -out {} \
-                -outfmt "6 std qseq sseq sstrand" \
-                -evalue 30000 -word_size 7 \
-                -num_alignments 50000 \
-                -penalty -1 -reward 1 \
-                -ungapped >> {}/log/blastn.log 2>&1'.format(self.ref, input,name_result, self.out)
-        cmd = prepare_cmd(cmd)
-        try:
-            sbp.run(cmd,
-                    stdout=sbp.DEVNULL,
-                    stderr=sbp.DEVNULL,
-                    shell=True, check=True)
-        except sbp.CalledProcessError:
-            call_log(self.out, 'blastn', cmd)
-            sys.exit(1)
+    def blastn(self, input, time):
+        @timeout_decorator.timeout(time) # type: ignore
+        def blastn_inner(self, input):
+            name_result = str(input).replace('/query_', '/blastn_')
+            cmd = 'blastn -db {} -query {} -out {} \
+                    -outfmt "6 std qseq sseq sstrand" \
+                    -evalue 30000 -word_size 7 \
+                    -num_alignments 50000 \
+                    -penalty -1 -reward 1 \
+                    -ungapped >> {}/log/blastn.log 2>&1'.format(self.ref, input,name_result, self.out)
+            cmd = prepare_cmd(cmd)
+            try:
+                sbp.run(cmd,
+                        stdout=sbp.DEVNULL,
+                        stderr=sbp.DEVNULL,
+                        shell=True, check=True)
+            except sbp.CalledProcessError:
+                call_log(self.out, 'blastn', cmd)
+                sys.exit(1)
 
-        os.remove(input)
-        return name_result
+            os.remove(input)
+            return name_result
+        return blastn_inner(self, input)
 
     def filter_blastn_result(self, input, primers_L, primers_R):
         try:
@@ -391,9 +458,8 @@ class AddPrimerToVcf(object):
         nrow = len(df)
         df['idnum'] = range(nrow) #Add id number to last column
 
-        df_selected = None
-
         idnum = -1
+        selected_row_index = []
         for j in range(nrow):
             while int(df['qaccver'][j].split('_')[-1]) != idnum:
                 idnum += 1
@@ -445,19 +511,27 @@ class AddPrimerToVcf(object):
                     mm3t += 1
             if mm3t > self.args.args.mismatch_allowed_3_terminal:
                 continue
-
+            
+            #241023 This code may takes a lot of time...
+            '''
             if df_selected is None:
                 df_selected = pd.DataFrame([df.iloc[j]])
             else:
                 df_selected = pd.concat([df_selected, pd.DataFrame([df.iloc[j]])])
-        
-        if df_selected is None:
-            pd.DataFrame(columns=df.columns)
+            '''
+            selected_row_index.append(j)
+
+        if len(selected_row_index) == 0:
+            df_selected = pd.DataFrame(columns=df.columns)
+        else:
+            df_selected = df.iloc[selected_row_index]
+            df_selected = df_selected.reset_index(drop=True)
         
         df_selected.sort_values(by=['idnum','saccver','sstart'], inplace=True) #sort
         
         #Detecting unintended PCR products
-        df_output = None
+        output_row_index = []
+        #df_output = None
         for j in range(len(df_selected)):
             if df_selected.at[df_selected.index[j], 'sstrand'] == 'plus':
                 pri = df_selected.at[df_selected.index[j], 'qaccver']
@@ -471,15 +545,22 @@ class AddPrimerToVcf(object):
                     if df_selected.at[df_selected.index[j+cnt], 'saccver'] != chr: break
                     if df_selected.at[df_selected.index[j+cnt], 'sstrand'] == 'minus':
                         if df_selected.at[df_selected.index[j+cnt], 'sstart'] - pos < self.args.args.unintended_prod_size_allowed:
+                            output_row_index.append(j)
+                            output_row_index.append(j+cnt)
+                            '''
                             if df_output is None:
                                 df_output = pd.DataFrame([df_selected.iloc[j]])
                             else:
                                 df_output = pd.concat([df_output, pd.DataFrame([df_selected.iloc[j]])])
                             df_output = pd.concat([df_output, pd.DataFrame([df_selected.iloc[j+cnt]])])
+                            '''
                         else:
                             break
-        if df_output is None:
-             df_output = pd.DataFrame(columns=df_selected.columns)
+        if len(output_row_index) == 0:
+            df_output = pd.DataFrame(columns=df_selected.columns)
+        else:
+            df_output = df_selected.iloc[output_row_index]
+            df_output = df_output.reset_index(drop=True)
              
         name_blastn_filtered = str(input).replace('/blastn_', '/blastn_filtered_')
         df_output.to_csv(name_blastn_filtered, sep='\t', header=False, index=False)

@@ -119,3 +119,10 @@ mkselect -i test042_mkprimer/for_draw.fai \
 mkselect -i test042_mkprimer/for_draw.fai \
          -V test042_mkprimer/test042_primer_added.vcf \
          -n 10000 -O test042_2
+
+
+
+#241023 ver.0.5.1
+mkselect -i test051_mkprimer/for_draw.fai \
+         -V test051_mkprimer/test051_primer_added.vcf \
+         -n 10000 -O test051
