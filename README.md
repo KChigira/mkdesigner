@@ -1,8 +1,9 @@
 # 'MKDesigner' User Guide
-#### version 0.4.2
+#### version 0.5.1
 
 ## Table of contents
 - [Outline](#Outline)
+- [Update history](#update-history)
 - [Install](#Install)
   + [Install via bioconda](#Installation-using-bioconda)
 - [Usage](#Usage)
@@ -17,8 +18,12 @@ PCR-based genotyping is the most basic genotyping method, and is still an indisp
 When performing PCR-based genotyping, it is necessary to identify DNA markers (SSR, InDel, SNP) that are mutated between parental cultivars and design primers to amplify their surroundings.
 Primer3 is a convenient tool for designing primers against target sequences, available both on the web and on the local command line[1,2]. Primer-BLAST, which is a combination of Primer3 and BLAST, further searches for specificity within the reference genome and provides primers amplifying only the target sequence[3]. However, it can only be used on the web, and manual input is needed one by one. Therefore, it is very laborious when tens to hundreds of DNA markers are required. 
 
-'MKDesigner' can solve such troubles of marker design. MKDesigner also uses Primer3 and BLAST but It can deal NGS data to design all possible markers and its primers at once.As long as you have the  whole genome resequence data of the parent cultivars, MKDesigner generates a list of primers that amplify your desired DNA marker in just 2 steps.
+'MKDesigner' can solve such troubles of marker design. MKDesigner also uses Primer3 and BLAST but It can deal NGS data to design all possible markers and its primers at once. As long as you have the  whole genome resequence data of the parent cultivars, MKDesigner generates a list of primers that amplify your desired DNA marker in just 2 steps.
 
+## Update history
+2024-10-23 v0.5.1 
+ - '--limit' option was implemented to 'mkprimer'. 
+ -  Time for PCR specificity search was reduced.
 #### Citation
 - Comming soon.
 
@@ -40,33 +45,9 @@ conda create -n mkdesigner mkdesigner
  - samtools >=1.6
  - bcftools >=1.5
  - matplotlib-base
+ - timeout-decorator
 
 Tools above are installed automatically.
-
-
-#### Check about packages in dependency
-Dependent packages often get errors about shared libraries.
-Please check errors of packages below.
-```
-bcftools --version
-samtools --version
-```
-If you got error like below... 
-```
-bcftools: error while loading shared libraries: libcrypto.so.1.0.0: cannot open shared object file: No such file or directory
-```
-you can try a solution like below.
-```
-cd /home/[USER NAME]/(ex.)miniconda3/envs/(ex.)mkdesigner/lib
-ls -l libcrypto.so*
-```
-For example,
-`lrwxrwxrwx ... libcrypto.so -> libcrypto.so.3`
-`-rwxrwxr-x ... libcrypto.so.3`
-Then, you can make symbolic link to the new version of the shared library.
-```
-ln -s libcrypto.so.3 libcrypto.so.1.0.0
-```
 
 ## Usage
 ### Tutorial
@@ -87,7 +68,7 @@ mkvcf -r test_ref.fasta \
       -b lineA_sorted_reads.bam \
       -b lineB_sorted_reads.bam \
       -n lineA -n lineB \
-      --output test --cpu 4
+      -O test --cpu 4(appropriately)
 ```
 Then, you will get the directory named 'test_mkvcf/' 
 ```
@@ -206,6 +187,14 @@ options:
                         e.g. "chr01:1000000-3500000"
                         If not specified, the program process whole genome.
                         This parameter can be specified multiple times.
+  -l , --limit          The upper limit of the number of primer design attempts.
+                        A large number will take a long time to calculate,
+                        but a small number may miss useful markers.
+                        default: 10000
+  --blast_timeout       If the process of primer specificity checking by BLAST
+                        took time more than this parameter,
+                        the variants considered to be non-specific.
+                        default: 60.0 (sec)
   --mindep              Variants with more depth than this
                         are judged as valid mutations
                         default: 2
@@ -276,6 +265,30 @@ options:
   -v, --version       show program's version number and exit`
 ```
 
+
+#### Check about packages in dependency
+Dependent packages often get errors about shared libraries.
+Please check errors of packages below.
+```
+bcftools --version
+samtools --version
+```
+If you got error like below... 
+```
+bcftools: error while loading shared libraries: libcrypto.so.1.0.0: cannot open shared object file: No such file or directory
+```
+you can try a solution like below.
+```
+cd /home/[USER NAME]/(ex.)miniconda3/envs/(ex.)mkdesigner/lib
+ls -l libcrypto.so*
+```
+For example,
+`lrwxrwxrwx ... libcrypto.so -> libcrypto.so.3`
+`-rwxrwxr-x ... libcrypto.so.3`
+Then, you can make symbolic link to the new version of the shared library.
+```
+ln -s libcrypto.so.3 libcrypto.so.1.0.0
+```
 
 ## References
 [1] Untergasser A, Cutcutache I, Koressaar T, Ye J, Faircloth BC, Remm M and Rozen SG.

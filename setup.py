@@ -13,6 +13,7 @@ setup(name='mkdesigner',
       install_requires=[
         'pandas',
         'matplotlib',
+        'timeout-decorator',
       ],
       entry_points={'console_scripts': [
             'mkvcf = mkdesigner.mkvcf:main',

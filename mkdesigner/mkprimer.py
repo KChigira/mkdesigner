@@ -36,6 +36,11 @@ class MKPrimer(object):
         self.dir = '{}_mkprimer'.format(self.stem)
         self.middir = '{}_mkprimer/intermediate'.format(self.stem)
 
+        #241023 added
+        #set a limit number to consider primers
+        self.limit = args.limit
+        self.timeout = args.blast_timeout
+
     def mkdir(self):
         os.mkdir('{}'.format(self.dir))
         os.mkdir('{}'.format(self.middir))

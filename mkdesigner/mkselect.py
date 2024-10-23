@@ -260,7 +260,7 @@ class MKSelect(object):
         #2. output primer data
         self.out_table.to_csv('{}/{}_primer_data.tsv'.format(self.dir, self.stem), sep='\t', header=True, index=False)
 
-        print(time_stamp(), '{} markers were selected.\n'.format(len(self.data_s)), flush=True)
+        print(time_stamp(), '{} markers were selected.'.format(len(self.data_s)), flush=True)
 
     def draw(self):
         out_vcf_name = '{}/{}.vcf'.format(self.dir, self.stem)

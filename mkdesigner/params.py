@@ -82,6 +82,7 @@ class Params(object):
         parser.usage = ('mkprimer -r <FASTA> -V <VCF> -n1 <name1> -n2 <name2>\n'
                         '         -O <output name> --type <SNP or INDEL>\n'
                         '         [--target <Target position>]\n'
+                        '         [--limit <INT>]\n'
                         '         [--mindep <INT>] [--maxdep <INT>]\n'
                         '         [--min_prodlen <INT>] [--max_prodlen <INT>]\n'
                         '         [--margin <INT>] [--max_distance <INT>]')
@@ -145,6 +146,26 @@ class Params(object):
                                   'e.g. "chr01:1000000-3500000"\n'
                                   'If not specified, the program process whole genome.\n'
                                   'This parameter can be specified multiple times.'),
+                            metavar='')
+        
+        parser.add_argument('-l', '--limit',
+                            action='store',
+                            default=10000,
+                            type=int,
+                            help=('The upper limit of the number of primer design attempts.\n'
+                                  'A large number will take a long time to calculate,\n'
+                                  'but a small number may miss useful markers.\n'
+                                  'default: 10000'),
+                            metavar='')
+
+        parser.add_argument('--blast_timeout',
+                            action='store',
+                            default=60.0,
+                            type=float,
+                            help=('If the process of primer specificity checking by BLAST\n'
+                                  'took time more than this parameter,\n'
+                                  'the variants considered to be non-specific.\n'
+                                  'default: 60.0 (sec)'),
                             metavar='')
         
         parser.add_argument('--mindep',
