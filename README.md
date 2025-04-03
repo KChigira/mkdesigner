@@ -33,6 +33,7 @@ Primer3 is a convenient tool for designing primers against target sequences, ava
 * OS: Ubuntu 24.04 LTS
 * Processer: Higher grade than 7th Gen Intel® Core™ Series
 * Memory: > 16 GB
+
 It may work even if the condition is different.
 
 ### Install via conda package manager
