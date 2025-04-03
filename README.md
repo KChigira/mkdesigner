@@ -29,10 +29,18 @@ Primer3 is a convenient tool for designing primers against target sequences, ava
 
 ## Install
 
-### Install via bioconda
+### Supported environment
+* OS: Ubuntu 24.04 LTS
+* Processer: Higher grade than 7th Gen Intel® Core™ Series
+* Memory: > 16 GB
+It may work even if the condition is different.
+
+### Install via conda package manager
 We recommend that you install the MKDesigner in a dedicated environment.
 ```
-conda create -n mkdesigner mkdesigner
+conda create -n mkdesigner
+conda activate mkdesigner
+conda install mkdesigner -c bioconda -c conda-forge
 ```
 
 #### Dependencies
