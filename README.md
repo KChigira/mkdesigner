@@ -21,6 +21,8 @@ Primer3 is a convenient tool for designing primers against target sequences, ava
 'MKDesigner' can solve such troubles of marker design. MKDesigner also uses Primer3 and BLAST but It can deal NGS data to design all possible markers and its primers at once. As long as you have the  whole genome resequence data of the parent cultivars, MKDesigner generates a list of primers that amplify your desired DNA marker in just 2 steps.
 
 ## Update history
+2025-04-04 v0.5.2 
+ - A minor change was made to the format of the output VCF file for compatibility with the TASEQ program.
 2024-10-23 v0.5.1 
  - '--limit' option was implemented to 'mkprimer'. 
  -  Time for PCR specificity search was reduced.

@@ -110,7 +110,7 @@ class AddPrimerToVcf(object):
                 self.data.at[self.data.index[id], 'FILTER'] = 'NON_SPECIFIC'
             elif status == 2:
                 success += 1
-                self.data.at[self.data.index[id], 'FILTER'] = 'PASS_P'
+                self.data.at[self.data.index[id], 'FILTER'] = 'PASS'
             elif status == 9:
                 blast_to += 1
                 self.data.at[self.data.index[id], 'FILTER'] = 'BLAST_TIMEOUT'

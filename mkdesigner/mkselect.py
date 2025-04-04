@@ -58,8 +58,8 @@ class MKSelect(object):
         self.data = pd.DataFrame(self.data, columns=self.colnames)
 
     def filtervcf(self):
-        #Select variants FILTER = PASS_P
-        data_pass = self.data[self.data['FILTER'] == 'PASS_P']
+        #Select variants FILTER = PASS
+        data_pass = self.data[self.data['FILTER'] == 'PASS']
 
         #Avoid lowercase
         if self.args.avoid_lowercase:
